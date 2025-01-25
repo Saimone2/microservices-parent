@@ -1,0 +1,26 @@
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/
+.settings/
+log/
+
+# Logs
+*.log
+
+# Compiled class files
+*.class
+
+# IntelliJ IDEA specific files
+out/
