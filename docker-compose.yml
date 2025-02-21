@@ -1,0 +1,134 @@
+version: "3.8"
+
+services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+    ports:
+      - "8761:8761"
+    container_name: eureka-server
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+  config-server:
+    build:
+      context: ./config-server
+    ports:
+      - "8888:8888"
+    container_name: config-server
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+    ports:
+      - "8080:8080"
+    container_name: gateway-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_pass
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  user-service:
+    build:
+      context: ./user-service
+    ports:
+      - "8081:8081"
+    container_name: user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/users_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  auth-service:
+    build:
+      context: ./auth-service
+    ports:
+      - "8082:8082"
+    container_name: auth-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - KEYCLOAK_AUTH_SERVER_URL=http://keycloak:8080/
+      - KEYCLOAK_REALM=myrealm
+    depends_on:
+      config-server:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.3
+    command: start-dev
+    container_name: keycloak
+    ports:
+      - "8083:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=keycloak_pass
+      - KC_HEALTH_ENABLED=true
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ 'CMD-SHELL', '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)new java.net.URL(args[0]).openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://localhost:8080/health/live' ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+networks:
+  microservices-net:
+
+volumes:
+  keycloak_data:

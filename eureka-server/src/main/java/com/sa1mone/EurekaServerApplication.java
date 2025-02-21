@@ -1,4 +1,4 @@
-package com.sa1mone.eureka_server;
+package com.sa1mone;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

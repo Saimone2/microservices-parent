@@ -1,4 +1,4 @@
-package com.sa1mone.gateway_service;
+package com.sa1mone;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
