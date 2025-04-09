@@ -4,16 +4,13 @@ server:
 spring:
   application:
     name: user-service
-  datasource:
-    url: jdbc:postgresql://postgres:5432/users_db
-    username: postgres
-    password: postgres_pass
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
   config:
     import: "optional:configserver:http://config-server:8888"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/ecommerce-realm
 
 eureka:
   client:

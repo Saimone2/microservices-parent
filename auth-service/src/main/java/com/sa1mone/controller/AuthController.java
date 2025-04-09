@@ -1,27 +1,18 @@
 package com.sa1mone.controller;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.stereotype.Controller;
 
-import java.util.Map;
-
-@RestController
+@Controller
 @RequestMapping("/auth")
 public class AuthController {
 
-    @GetMapping("/public")
-    public String publicEndpoint() {
-        return "Цей ендпоінт доступний для всіх!";
-    }
-
-    @GetMapping("/private")
-    public Map<String, Object> privateEndpoint(@AuthenticationPrincipal Jwt jwt) {
-        return Map.of(
-                "message", "Цей ендпоінт доступний тільки авторизованим користувачам!",
-                "user", jwt.getClaims()
-        );
+    @PostMapping("/login")
+    public String login(@RegisteredOAuth2AuthorizedClient("keycloak") OAuth2AuthorizedClient authorizedClient) {
+        OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+        return "Access Token: " + accessToken.getTokenValue();
     }
 }

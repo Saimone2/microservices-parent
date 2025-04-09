@@ -68,6 +68,22 @@ services:
     networks:
       - microservices-net
 
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmqctl status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
   user-service:
     build:
       context: ./user-service
@@ -77,10 +93,13 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=default
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/users_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres_pass
+      - SPRING_RABBITMQ_HOST=rabbitmq
     depends_on:
+      rabbitmq:
+        condition: service_healthy
       config-server:
         condition: service_healthy
       postgres:
@@ -88,21 +107,71 @@ services:
     networks:
       - microservices-net
 
-  auth-service:
-    build:
-      context: ./auth-service
-    ports:
-      - "8082:8082"
-    container_name: auth-service
+  order-postgres:
+    image: postgres:15
+    container_name: order-postgres
     environment:
-      - SPRING_PROFILES_ACTIVE=default
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - KEYCLOAK_AUTH_SERVER_URL=http://keycloak:8080/
-      - KEYCLOAK_REALM=myrealm
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: order_pass
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  order-service:
+    build:
+      context: ./order-service
+    ports:
+      - "8083:8080"
+    container_name: order-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://order-postgres:5432/orders_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: order_pass
+      SPRING_PROFILES_ACTIVE: default
     depends_on:
-      config-server:
+      order-postgres:
         condition: service_healthy
-      keycloak:
+    networks:
+      - microservices-net
+
+
+  catalog-postgres:
+    image: postgres:15
+    container_name: catalog-postgres
+    environment:
+      POSTGRES_DB: catalog_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: catalog_pass
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+    ports:
+      - "8082:8080"
+    container_name: catalog-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://catalog-postgres:5432/catalog_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: catalog_pass
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      catalog-postgres:
         condition: service_healthy
     networks:
       - microservices-net
@@ -117,6 +186,8 @@ services:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=keycloak_pass
       - KC_HEALTH_ENABLED=true
+      - KC_HOSTNAME=localhost
+      - KC_HOSTNAME_STRICT=8083
     volumes:
       - keycloak_data:/opt/keycloak/data
     networks:
@@ -126,6 +197,123 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  payment-postgres:
+    image: postgres:15
+    container_name: payment-postgres
+    environment:
+      POSTGRES_DB: payments_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: payment_pass
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8080"
+    container_name: payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-postgres:5432/payments_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: payment_pass
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  inventory-postgres:
+    image: postgres:15
+    container_name: inventory-postgres
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: inventory_pass
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8080"
+    container_name: inventory-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-postgres:5432/inventory_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: inventory_pass
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      inventory-postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  delivery-postgres:
+    image: postgres:15
+    container_name: delivery-postgres
+    environment:
+      POSTGRES_DB: delivery_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: delivery_pass
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  delivery-service:
+    build:
+      context: ./delivery-service
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8080"
+    container_name: delivery-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://delivery-postgres:5432/delivery_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: delivery_pass
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      delivery-postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8087:8080"
+    container_name: auth-service
+    depends_on:
+      - keycloak
+    networks:
+      - microservices-net
 
 networks:
   microservices-net:
