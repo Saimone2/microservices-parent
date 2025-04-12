@@ -1,30 +1,51 @@
-version: "3.8"
+version: "3.9"
 
 services:
+
+  # Config Server
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    ports:
+      - "8888:8888"
+    container_name: config-server
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Eureka Server
   eureka-server:
     build:
       context: ./eureka-server
+      dockerfile: Dockerfile
     ports:
       - "8761:8761"
     container_name: eureka-server
-    environment:
-      - SPRING_PROFILES_ACTIVE=default
     networks:
       - microservices-net
     healthcheck:
       test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health" ]
-      interval: 10s
-      retries: 5
-      start_period: 30s
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      config-server:
+        condition: service_healthy
 
-  config-server:
+  # API Gateway
+  api-gateway:
     build:
-      context: ./config-server
+      context: ./api-gateway
+      dockerfile: Dockerfile
     ports:
-      - "8888:8888"
-    container_name: config-server
+      - "8080:8080"
+    container_name: api-gateway
     environment:
-      - SPRING_PROFILES_ACTIVE=default
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
       eureka-server:
@@ -32,42 +53,12 @@ services:
     networks:
       - microservices-net
     healthcheck:
-      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health" ]
-      interval: 10s
-      retries: 5
-      start_period: 30s
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  gateway-service:
-    build:
-      context: ./gateway-service
-    ports:
-      - "8080:8080"
-    container_name: gateway-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=default
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    depends_on:
-      config-server:
-        condition: service_healthy
-    networks:
-      - microservices-net
-
-  postgres:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: users_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_pass
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - microservices-net
-
+  # RabbitMQ Service
   rabbitmq:
     image: rabbitmq:management
     container_name: rabbitmq
@@ -75,216 +66,151 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: pass
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin_pass
+    networks:
+      - microservices-net
     healthcheck:
       test: [ "CMD-SHELL", "rabbitmqctl status" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-
-  user-service:
-    build:
-      context: ./user-service
-    ports:
-      - "8081:8081"
-    container_name: user-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=default
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres_pass
-      - SPRING_RABBITMQ_HOST=rabbitmq
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    networks:
-      - microservices-net
-
-  order-postgres:
-    image: postgres:15
-    container_name: order-postgres
-    environment:
-      POSTGRES_DB: orders_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: order_pass
-    ports:
-      - "5435:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - microservices-net
-
-  order-service:
-    build:
-      context: ./order-service
-    ports:
-      - "8083:8080"
-    container_name: order-service
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://order-postgres:5432/orders_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: order_pass
-      SPRING_PROFILES_ACTIVE: default
-    depends_on:
-      order-postgres:
-        condition: service_healthy
-    networks:
-      - microservices-net
-
-
-  catalog-postgres:
-    image: postgres:15
-    container_name: catalog-postgres
-    environment:
-      POSTGRES_DB: catalog_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: catalog_pass
-    ports:
-      - "5434:5432"
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - microservices-net
-
-  catalog-service:
-    build:
-      context: ./catalog-service
-    ports:
-      - "8082:8080"
-    container_name: catalog-service
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://catalog-postgres:5432/catalog_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: catalog_pass
-      SPRING_PROFILES_ACTIVE: default
-    depends_on:
-      catalog-postgres:
-        condition: service_healthy
-    networks:
-      - microservices-net
-
+  # Keycloak
   keycloak:
-    image: quay.io/keycloak/keycloak:22.0.3
-    command: start-dev
+    image: quay.io/keycloak/keycloak:26.1.4
     container_name: keycloak
+    command: start-dev
     ports:
-      - "8083:8080"
+      - "8180:8080"
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=keycloak_pass
       - KC_HEALTH_ENABLED=true
-      - KC_HOSTNAME=localhost
-      - KC_HOSTNAME_STRICT=8083
     volumes:
       - keycloak_data:/opt/keycloak/data
     networks:
       - microservices-net
-    healthcheck:
-      test: [ 'CMD-SHELL', '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)new java.net.URL(args[0]).openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://localhost:8080/health/live' ]
-      interval: 5s
-      timeout: 5s
-      retries: 30
 
-  payment-postgres:
-    image: postgres:15
-    container_name: payment-postgres
-    environment:
-      POSTGRES_DB: payments_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: payment_pass
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
     ports:
-      - "5436:5432"
+      - "8087:8080"
+    container_name: auth-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - KEYCLOAK_SERVER_URL=http://keycloak:8180
+    depends_on:
+      - eureka-server
+      - keycloak
+    networks:
+      - microservices-net
+
+  # PostgreSQL for User Service
+  user-postgres:
+    image: postgres:17.4
+    container_name: user-postgres
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_pass
+    ports:
+      - "5432:5432"
+    networks:
+      - microservices-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - microservices-net
 
-  payment-service:
+  # User Service
+  user-service:
     build:
-      context: ./payment-service
+      context: ./user-service
       dockerfile: Dockerfile
     ports:
-      - "8084:8080"
-    container_name: payment-service
+      - "8081:8080"
+    container_name: user-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-postgres:5432/payments_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: payment_pass
-      SPRING_PROFILES_ACTIVE: default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-postgres:5432/users_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
+
     depends_on:
-      payment-postgres:
+      eureka-server:
+        condition: service_healthy
+      user-postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - microservices-net
 
-  inventory-postgres:
-    image: postgres:15
-    container_name: inventory-postgres
+  # PostgreSQL for Catalog Service
+  catalog-postgres:
+    image: postgres:17.4
+    container_name: catalog-postgres
     environment:
-      POSTGRES_DB: inventory_db
+      POSTGRES_DB: catalog_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: inventory_pass
+      POSTGRES_PASSWORD: postgres_pass
     ports:
-      - "5437:5432"
+      - "5433:5432"
+    networks:
+      - microservices-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - microservices-net
 
-  inventory-service:
+  # Catalog Service
+  catalog-service:
     build:
-      context: ./inventory-service
+      context: ./catalog-service
       dockerfile: Dockerfile
     ports:
-      - "8085:8080"
-    container_name: inventory-service
+      - "8082:8080"
+    container_name: catalog-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-postgres:5432/inventory_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: inventory_pass
-      SPRING_PROFILES_ACTIVE: default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://catalog-postgres:5432/catalog_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
     depends_on:
-      inventory-postgres:
+      eureka-server:
+        condition: service_healthy
+      catalog-postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - microservices-net
 
+  # PostgreSQL for Delivery Service
   delivery-postgres:
-    image: postgres:15
+    image: postgres:17.4
     container_name: delivery-postgres
     environment:
       POSTGRES_DB: delivery_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: delivery_pass
+      POSTGRES_PASSWORD: postgres_pass
     ports:
-      - "5438:5432"
+      - "5437:5432"
+    networks:
+      - microservices-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - microservices-net
 
+  # Delivery Service
   delivery-service:
     build:
       context: ./delivery-service
@@ -293,30 +219,146 @@ services:
       - "8086:8080"
     container_name: delivery-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://delivery-postgres:5432/delivery_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: delivery_pass
-      SPRING_PROFILES_ACTIVE: default
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://delivery-postgres:5432/delivery_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
     depends_on:
+      eureka-server:
+        condition: service_healthy
       delivery-postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - microservices-net
 
-  auth-service:
+  # PostgreSQL for Inventory Service
+  inventory-postgres:
+    image: postgres:17.4
+    container_name: inventory-postgres
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_pass
+    ports:
+      - "5436:5432"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Inventory Service
+  inventory-service:
     build:
-      context: ./auth-service
+      context: ./inventory-service
       dockerfile: Dockerfile
     ports:
-      - "8087:8080"
-    container_name: auth-service
+      - "8085:8080"
+    container_name: inventory-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://inventory-postgres:5432/inventory_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
     depends_on:
-      - keycloak
+      eureka-server:
+        condition: service_healthy
+      inventory-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  # PostgreSQL for Order Service
+  order-postgres:
+    image: postgres:17.4
+    container_name: order-postgres
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_pass
+    ports:
+      - "5434:5432"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Order Service
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8080"
+    container_name: order-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://order-postgres:5432/order_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      order-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  # PostgreSQL for Payment Service
+  payment-postgres:
+    image: postgres:17.4
+    container_name: payment-postgres
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_pass
+    ports:
+      - "5435:5432"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8080"
+    container_name: payment-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-postgres:5432/payment_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres_pass
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      payment-postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - microservices-net
 
 networks:
   microservices-net:
+    driver: bridge
 
 volumes:
   keycloak_data:

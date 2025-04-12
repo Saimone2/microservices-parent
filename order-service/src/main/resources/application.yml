@@ -1,11 +1,11 @@
 server:
-  port: 8081
+  port: 8083
 
 spring:
   application:
-    name: user-service
-#  config:
-#    import: "optional:configserver:http://config-server:8888"
+    name: order-service
+  #  config:
+  #    import: "optional:configserver:http://config-server:8888"
 
   rabbitmq:
     host: rabbitmq
@@ -20,12 +20,6 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/realms/ecommerce-realm
 
 eureka:
   client:
