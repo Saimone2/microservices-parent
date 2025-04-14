@@ -2,13 +2,28 @@ server:
   port: 8087
 
 spring:
+  application:
+    name: auth-service
   security:
     oauth2:
       client:
         registration:
           keycloak:
             client-id: auth-service
-            client-secret:
+            client-secret: UONUyl6yVmID17dG9agKu2gDf1AnCt6g
+            scope: openid
+            provider: keycloak
         provider:
           keycloak:
-            issuer-uri: http://localhost:8080/realms/myrealm
+            issuer-uri: http://keycloak:8080/realms/ecommerce-realm
+
+keycloak:
+  auth-server-url: http://keycloak:8080
+  realm: ecommerce-realm
+  client-id: auth-service
+  client-secret: UONUyl6yVmID17dG9agKu2gDf1AnCt6g
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/

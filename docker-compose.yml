@@ -98,11 +98,10 @@ services:
       context: ./auth-service
       dockerfile: Dockerfile
     ports:
-      - "8087:8080"
+      - "8087:8087"
     container_name: auth-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - KEYCLOAK_SERVER_URL=http://keycloak:8180
     depends_on:
       - eureka-server
       - keycloak
@@ -133,7 +132,7 @@ services:
       context: ./user-service
       dockerfile: Dockerfile
     ports:
-      - "8081:8080"
+      - "8081:8081"
     container_name: user-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -175,7 +174,7 @@ services:
       context: ./catalog-service
       dockerfile: Dockerfile
     ports:
-      - "8082:8080"
+      - "8082:8082"
     container_name: catalog-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -216,7 +215,7 @@ services:
       context: ./delivery-service
       dockerfile: Dockerfile
     ports:
-      - "8086:8080"
+      - "8086:8086"
     container_name: delivery-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -257,7 +256,7 @@ services:
       context: ./inventory-service
       dockerfile: Dockerfile
     ports:
-      - "8085:8080"
+      - "8085:8085"
     container_name: inventory-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -298,7 +297,7 @@ services:
       context: ./order-service
       dockerfile: Dockerfile
     ports:
-      - "8083:8080"
+      - "8083:8083"
     container_name: order-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
@@ -339,7 +338,7 @@ services:
       context: ./payment-service
       dockerfile: Dockerfile
     ports:
-      - "8084:8080"
+      - "8084:8084"
     container_name: payment-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
