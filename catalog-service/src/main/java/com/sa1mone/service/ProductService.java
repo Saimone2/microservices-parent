@@ -1,11 +1,14 @@
 package com.sa1mone.service;
 
 import com.sa1mone.entity.Product;
+import com.sa1mone.request.ProductRequest;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface ProductService {
-    Product saveProduct(Product product);
-    Product getProductById(Long id);
+    Product getProductById(UUID id);
     List<Product> getAllProducts();
+    void createProductPosition(ProductRequest productRequest);
+    Product updateProduct(UUID productId, ProductRequest request);
 }

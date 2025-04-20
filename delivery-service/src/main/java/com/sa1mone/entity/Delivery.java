@@ -1,24 +1,32 @@
 package com.sa1mone.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.sa1mone.enums.DeliveryStatus;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
+@Table(name = "delivery")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Delivery {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    private Long orderId;
-    private String status; // "Pending", "In Progress", "Delivered"
+    @NotNull
+    private UUID orderId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DeliveryStatus status = DeliveryStatus.PENDING;
+
+    @NotBlank
     private String address;
+
+    private LocalDateTime shippedAt;
+    private LocalDateTime deliveredAt;
 }

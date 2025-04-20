@@ -5,6 +5,7 @@ import com.sa1mone.repo.InventoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class InventoryServiceImpl implements InventoryService {
@@ -17,23 +18,23 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    public Optional<Inventory> getInventoryByProductId(Long productId) {
+    public Optional<Inventory> getInventoryByProductId(UUID productId) {
         return inventoryRepository.findByProductId(productId);
     }
 
     @Override
-    public Inventory updateInventory(Long productId, Integer quantityChange) {
+    public Inventory updateInventory(UUID productId, Integer quantityChange) {
         Inventory inventory = inventoryRepository.findByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found in inventory"));
-        inventory.setQuantity(inventory.getQuantity() + quantityChange);
+        //inventory.setQuantity(inventory.getQuantity() + quantityChange);
         return inventoryRepository.save(inventory);
     }
 
     @Override
-    public Inventory addInventory(Long productId, Integer quantity) {
+    public Inventory addInventory(UUID productId, Integer quantity) {
         Inventory inventory = new Inventory();
-        inventory.setProductId(productId);
-        inventory.setQuantity(quantity);
+       // inventory.setProductId(productId);
+        //inventory.setQuantity(quantity);
         return inventoryRepository.save(inventory);
     }
 }

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -18,8 +19,8 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @NotBlank(message = "The first name cannot be blank")
     @Size(min = 2, max = 25, message = "The last name must be between 2 and 25 characters")
@@ -43,15 +44,4 @@ public class User {
     private Boolean isActive;
     private LocalDateTime lastLogin;
     private LocalDateTime createdAt;
-
-    public User(String firstName, String lastName, String email, String phoneNumber, String address, Boolean isActive, LocalDateTime createdAt, LocalDateTime lastLogin) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.address = address;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.lastLogin = lastLogin;
-    }
 }

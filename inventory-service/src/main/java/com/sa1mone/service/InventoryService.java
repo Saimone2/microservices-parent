@@ -3,9 +3,10 @@ package com.sa1mone.service;
 import com.sa1mone.entity.Inventory;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface InventoryService {
-    Optional<Inventory> getInventoryByProductId(Long productId);
-    Inventory updateInventory(Long productId, Integer quantityChange);
-    Inventory addInventory(Long productId, Integer quantity);
+    Optional<Inventory> getInventoryByProductId(UUID productId);
+    Inventory updateInventory(UUID productId, Integer quantityChange);
+    Inventory addInventory(UUID productId, Integer quantity);
 }

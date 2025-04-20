@@ -1,11 +1,13 @@
 package com.sa1mone.service;
 
 import com.sa1mone.entity.Delivery;
+import com.sa1mone.enums.DeliveryStatus;
 import com.sa1mone.repo.DeliveryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DeliveryServiceImpl implements DeliveryService {
@@ -18,16 +20,16 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
-    public Delivery createDelivery(Long orderId, String address) {
+    public Delivery createDelivery(UUID orderId, String address) {
         Delivery delivery = new Delivery();
         delivery.setOrderId(orderId);
         delivery.setAddress(address);
-        delivery.setStatus("Pending");
+        delivery.setStatus(DeliveryStatus.PENDING);
         return deliveryRepository.save(delivery);
     }
 
     @Override
-    public Delivery updateDeliveryStatus(Long deliveryId, String status) {
+    public Delivery updateDeliveryStatus(UUID deliveryId, DeliveryStatus status) {
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new RuntimeException("Delivery not found"));
         delivery.setStatus(status);
@@ -35,7 +37,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     @Override
-    public Optional<Delivery> getDeliveryByOrderId(Long orderId) {
+    public Optional<Delivery> getDeliveryByOrderId(UUID orderId) {
         return deliveryRepository.findByOrderId(orderId);
     }
 }
