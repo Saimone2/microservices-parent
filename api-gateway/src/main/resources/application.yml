@@ -8,7 +8,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://auth-service:8087/realms/ecommerce-realm/protocol/openid-connect/certs
+          jwk-set-uri: http://keycloak:8080/realms/ecommerce-realm/protocol/openid-connect/certs
   cloud:
     gateway:
       routes:
@@ -40,6 +40,11 @@ spring:
           uri: http://delivery-service:8086
           predicates:
             - Path=/delivery/**
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
 
 eureka:
   client:

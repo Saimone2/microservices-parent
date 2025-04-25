@@ -19,8 +19,9 @@ public class Inventory {
     @NotNull
     private UUID productId;
 
-    @NotNull
-    private UUID warehouseId;
+    @ManyToOne
+    @JoinColumn(name = "warehouse_id", nullable = false)
+    private Warehouse warehouse;
 
     @Min(0)
     private int availableQuantity;

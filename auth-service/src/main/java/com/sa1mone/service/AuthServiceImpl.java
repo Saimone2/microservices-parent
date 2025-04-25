@@ -262,6 +262,28 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    public boolean isUserTableEmpty() {
+        String url = buildUrl("admin/realms/" + properties.getRealm() + "/users");
+
+        try {
+            ResponseEntity<List> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    buildHttpEntity(null, getAdminAccessToken(), MediaType.APPLICATION_JSON),
+                    List.class
+            );
+
+            List<?> users = response.getBody();
+            return users == null || users.isEmpty();
+        } catch (HttpClientErrorException e) {
+            handleHttpError(e, "Error checking Keycloak user table");
+            return false;
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error while checking Keycloak users: " + e.getMessage(), e);
+        }
+    }
+
     private void updateLastLogin(String email) {
         String userServiceUrl = "http://user-service:8081/user/update-last-login";
 

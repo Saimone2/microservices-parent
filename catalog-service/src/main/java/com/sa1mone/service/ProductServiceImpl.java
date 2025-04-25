@@ -65,7 +65,23 @@ public class ProductServiceImpl implements ProductService {
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
+        product.setUpdatedAt(LocalDateTime.now());
 
         return productRepository.save(product);
+    }
+
+    @Override
+    public boolean isProductTableEmpty() {
+        return productRepository.count() == 0;
+    }
+
+    @Override
+    public List<Product> getTestProducts() {
+        return productRepository.findTestProducts();
+    }
+
+    @Override
+    public Product checkProductExists(UUID productId) {
+        return productRepository.findById(productId).orElseThrow(() -> new EntityNotFoundException("Product not found"));
     }
 }

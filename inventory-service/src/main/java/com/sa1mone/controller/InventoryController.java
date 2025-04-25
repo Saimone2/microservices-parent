@@ -1,14 +1,16 @@
 package com.sa1mone.controller;
 
 import com.sa1mone.entity.Inventory;
+import com.sa1mone.request.InventoryRequest;
 import com.sa1mone.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/inventory")
 public class InventoryController {
 
     private final InventoryService inventoryService;
@@ -19,18 +21,23 @@ public class InventoryController {
     }
 
     @GetMapping("/{productId}")
-    public Inventory getInventory(@PathVariable UUID productId) {
+    public List<Inventory> getInventoryByProductId(@PathVariable UUID productId) {
         return inventoryService.getInventoryByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Inventory not found for product"));
     }
 
-    @PostMapping
-    public Inventory addInventory(@RequestParam UUID productId, @RequestParam Integer quantity) {
-        return inventoryService.addInventory(productId, quantity);
+    @GetMapping("/all")
+    public List<Inventory> getAllInventory() {
+        return inventoryService.getAllInventory();
+    }
+
+    @PostMapping("/add")
+    public Inventory addInventory(@RequestBody InventoryRequest request) {
+        return inventoryService.addInventory(request);
     }
 
     @PutMapping
-    public Inventory updateInventory(@RequestParam UUID productId, @RequestParam Integer quantityChange) {
-        return inventoryService.updateInventory(productId, quantityChange);
+    public Inventory updateInventory(@RequestParam UUID productId, @RequestBody InventoryRequest request) {
+        return inventoryService.updateInventory(productId, request);
     }
 }

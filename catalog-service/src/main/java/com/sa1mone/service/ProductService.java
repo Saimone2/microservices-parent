@@ -11,4 +11,7 @@ public interface ProductService {
     List<Product> getAllProducts();
     void createProductPosition(ProductRequest productRequest);
     Product updateProduct(UUID productId, ProductRequest request);
+    boolean isProductTableEmpty();
+    List<Product> getTestProducts();
+    Product checkProductExists(UUID productId);
 }
