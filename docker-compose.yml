@@ -13,9 +13,9 @@ services:
     networks:
       - microservices-net
     healthcheck:
-      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health" ]
-      interval: 30s
-      timeout: 10s
+      test: [ "CMD", "wget", "--spider", "-q", "http://config-server:8888/actuator/health" ]
+      interval: 10s
+      timeout: 5s
       retries: 3
 
   # Eureka Server
@@ -29,9 +29,9 @@ services:
     networks:
       - microservices-net
     healthcheck:
-      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health" ]
-      interval: 30s
-      timeout: 10s
+      test: [ "CMD", "wget", "--spider", "-q", "http://eureka-server:8761/actuator/health" ]
+      interval: 10s
+      timeout: 5s
       retries: 3
     depends_on:
       config-server:
@@ -53,9 +53,9 @@ services:
     networks:
       - microservices-net
     healthcheck:
-      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health" ]
-      interval: 30s
-      timeout: 10s
+      test: [ "CMD", "wget", "--spider", "-q", "http://api-gateway:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
       retries: 3
 
   # RabbitMQ Service
@@ -72,8 +72,8 @@ services:
       - microservices-net
     healthcheck:
       test: [ "CMD-SHELL", "rabbitmqctl status" ]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
 
   # Keycloak
@@ -107,6 +107,11 @@ services:
       - keycloak
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://auth-service:8087/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL for User Service
   user-postgres:
@@ -124,7 +129,7 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
   # User Service
   user-service:
@@ -139,6 +144,11 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-postgres:5432/users_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres_pass
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://user-service:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
     depends_on:
       eureka-server:
@@ -166,7 +176,7 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
   # Catalog Service
   catalog-service:
@@ -190,6 +200,11 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://catalog-service:8082/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL for Delivery Service
   delivery-postgres:
@@ -207,7 +222,7 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
   # Delivery Service
   delivery-service:
@@ -231,6 +246,11 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://delivery-service:8086/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL for Inventory Service
   inventory-postgres:
@@ -248,7 +268,7 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
   # Inventory Service
   inventory-service:
@@ -272,6 +292,11 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://inventory-service:8085/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL for Order Service
   order-postgres:
@@ -289,7 +314,7 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
   # Order Service
   order-service:
@@ -313,6 +338,11 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://order-service:8083/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL for Payment Service
   payment-postgres:
@@ -330,7 +360,7 @@ services:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
 
   # Payment Service
   payment-service:
@@ -354,6 +384,11 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://payment-service:8084/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 networks:
   microservices-net:
