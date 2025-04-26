@@ -26,4 +26,6 @@ public class Warehouse {
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Inventory> inventoryList;
+
+    private Boolean isActive = true;
 }

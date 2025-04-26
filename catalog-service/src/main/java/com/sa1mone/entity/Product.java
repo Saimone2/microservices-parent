@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -30,7 +28,7 @@ public class Product {
     @Min(0)
     private int stockQuantity;
 
+    private Boolean isActive = true;
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 }

@@ -14,4 +14,6 @@ public interface ProductService {
     boolean isProductTableEmpty();
     List<Product> getTestProducts();
     Product checkProductExists(UUID productId);
+    void activateProduct(UUID productId);
+    void deactivateProduct(UUID productId);
 }

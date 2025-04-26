@@ -84,4 +84,30 @@ public class ProductServiceImpl implements ProductService {
     public Product checkProductExists(UUID productId) {
         return productRepository.findById(productId).orElseThrow(() -> new EntityNotFoundException("Product not found"));
     }
+
+    @Override
+    public void activateProduct(UUID productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        if (product.getIsActive()) {
+            throw new IllegalArgumentException("Product is already activated");
+        }
+
+        product.setIsActive(true);
+        productRepository.save(product);
+    }
+
+    @Override
+    public void deactivateProduct(UUID productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        if (!product.getIsActive()) {
+            throw new IllegalArgumentException("Product is already deactivated");
+        }
+
+        product.setIsActive(false);
+        productRepository.save(product);
+    }
 }

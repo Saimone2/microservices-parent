@@ -3,6 +3,7 @@ package com.sa1mone.controller;
 import com.sa1mone.entity.Inventory;
 import com.sa1mone.request.InventoryRequest;
 import com.sa1mone.service.InventoryService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class InventoryController {
     @GetMapping("/{productId}")
     public List<Inventory> getInventoryByProductId(@PathVariable UUID productId) {
         return inventoryService.getInventoryByProductId(productId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found for product"));
+                .orElseThrow(() -> new EntityNotFoundException("Inventory not found for product"));
     }
 
     @GetMapping("/all")

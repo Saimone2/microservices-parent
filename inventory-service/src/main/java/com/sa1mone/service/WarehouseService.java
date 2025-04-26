@@ -14,4 +14,6 @@ public interface WarehouseService {
     boolean isWarehouseTableEmpty();
     Warehouse updateWarehouse(UUID warehouseId, WarehouseRequest request);
     Optional<Warehouse> findById(UUID warehouseId);
+    void deactivateWarehouse(UUID warehouseId);
+    void activateWarehouse(UUID warehouseId);
 }

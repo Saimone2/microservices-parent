@@ -46,7 +46,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public void createLeftovers(InventoryRequest inventoryRequest) {
         Warehouse warehouse = warehouseService.getWarehouseById(inventoryRequest.getWarehouseId()).orElseThrow(
-                () -> new RuntimeException("Warehouse not found"));
+                () -> new EntityNotFoundException("Warehouse not found"));
 
         Inventory inventory = new Inventory();
         inventory.setProductId(inventoryRequest.getProductId());
@@ -89,7 +89,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public Inventory addInventory(InventoryRequest request) {
         Warehouse warehouse = warehouseService.findById(request.getWarehouseId())
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Warehouse not found"));
 
         boolean productExists = checkProductExists(request.getProductId());
         if (!productExists) {
@@ -117,7 +117,7 @@ public class InventoryServiceImpl implements InventoryService {
     public Inventory updateInventory(UUID productId, InventoryRequest request) {
         boolean productExists = checkProductExists(productId);
         if (!productExists) {
-            throw new IllegalArgumentException("Product not found");
+            throw new EntityNotFoundException("Product not found");
         }
 
         Inventory inventory = inventoryRepository.findByProductIdAndWarehouseId(productId, request.getWarehouseId())

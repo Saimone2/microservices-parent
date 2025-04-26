@@ -28,4 +28,6 @@ public class Inventory {
 
     @Min(0)
     private int reservedQuantity;
+
+    private Boolean isVisible = true;
 }

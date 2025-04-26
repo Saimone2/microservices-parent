@@ -1,6 +1,8 @@
 package com.sa1mone.service;
 
+import com.sa1mone.entity.Inventory;
 import com.sa1mone.entity.Warehouse;
+import com.sa1mone.repo.InventoryRepository;
 import com.sa1mone.repo.WarehouseRepository;
 import com.sa1mone.request.WarehouseRequest;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,10 +17,12 @@ import java.util.UUID;
 public class WarehouseServiceImpl implements WarehouseService {
 
     private final WarehouseRepository warehouseRepository;
+    private final InventoryRepository inventoryRepository;
 
     @Autowired
-    public WarehouseServiceImpl(WarehouseRepository warehouseRepository) {
+    public WarehouseServiceImpl(WarehouseRepository warehouseRepository, InventoryRepository inventoryRepository) {
         this.warehouseRepository = warehouseRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     @Override
@@ -62,5 +66,45 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     public Optional<Warehouse> findById(UUID warehouseId) {
         return warehouseRepository.findById(warehouseId);
+    }
+
+    @Override
+    public void deactivateWarehouse(UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new EntityNotFoundException("Warehouse not found"));
+
+        if (!warehouse.getIsActive()) {
+            throw new IllegalArgumentException("Warehouse is already deactivated");
+        }
+
+        warehouse.setIsActive(false);
+        warehouseRepository.save(warehouse);
+
+        List<Inventory> inventories = inventoryRepository.findByWarehouseId(warehouseId);
+
+        inventories.forEach(inventory -> {
+            inventory.setIsVisible(false);
+            inventoryRepository.save(inventory);
+        });
+    }
+
+    @Override
+    public void activateWarehouse(UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new EntityNotFoundException("Warehouse not found"));
+
+        if (warehouse.getIsActive()) {
+            throw new IllegalArgumentException("Warehouse is already activated");
+        }
+
+        warehouse.setIsActive(false);
+        warehouseRepository.save(warehouse);
+
+        List<Inventory> inventories = inventoryRepository.findByWarehouseId(warehouseId);
+
+        inventories.forEach(inventory -> {
+            inventory.setIsVisible(true);
+            inventoryRepository.save(inventory);
+        });
     }
 }

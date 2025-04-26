@@ -58,4 +58,16 @@ public class ProductController {
         List<Product> testProducts = productService.getTestProducts();
         return ResponseEntity.ok(testProducts);
     }
+
+    @PostMapping("/{productId}/deactivate")
+    public ResponseEntity<Map<String, Object>> deactivateProduct(@PathVariable UUID productId) {
+        productService.deactivateProduct(productId);
+        return ResponseEntity.ok(Map.of("message", "Product deactivated successfully"));
+    }
+
+    @PostMapping("/{productId}/activate")
+    public ResponseEntity<Map<String, Object>> activateProduct(@PathVariable UUID productId) {
+        productService.activateProduct(productId);
+        return ResponseEntity.ok(Map.of("message", "Product activated successfully"));
+    }
 }
