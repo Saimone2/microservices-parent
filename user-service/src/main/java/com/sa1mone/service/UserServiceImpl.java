@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -48,13 +49,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUserById(Long id) {
+    public User getUserById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
     @Override
-    public User updateUser(Long id, User updatedUser) {
+    public User updateUser(UUID id, User updatedUser) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -75,7 +76,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deactivateUser(Long id) {
+    public void deactivateUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         user.setIsActive(false);
@@ -119,7 +120,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void deactivateUserInKeycloak(String email) {
-        String authServiceUrl = "http://auth-service:8087/auth/deactivate-user";
+        String authServiceUrl = "http://auth-service:8087/management/auth/deactivate-user";
 
         Map<String, Object> requestBody = Map.of(
                 "email", email
@@ -143,7 +144,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private void updateUserInKeycloak(String email) {
-        String authServiceUrl = "http://auth-service:8087/auth/update-user";
+        String authServiceUrl = "http://auth-service:8087/management/auth/update-user";
 
         Map<String, Object> requestBody = Map.of(
                 "email", email
@@ -158,11 +159,11 @@ public class UserServiceImpl implements UserService {
                     new HttpEntity<>(requestBody, headers),
                     Map.class);
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("Failed to deactivate user in Keycloak");
+                throw new RuntimeException("Failed to update user in Keycloak");
             }
 
         } catch (HttpClientErrorException e) {
-            throw new RuntimeException("Error while deactivating user in Keycloak: " + e.getMessage(), e);
+            throw new RuntimeException("Error while updating user in Keycloak: " + e.getMessage(), e);
         }
     }
 }

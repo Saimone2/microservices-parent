@@ -1,5 +1,6 @@
 package com.sa1mone.entity;
 
+import com.sa1mone.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -40,6 +41,10 @@ public class User {
     @NotBlank(message = "Address cannot be blank")
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
+
+    @NotBlank
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     private Boolean isActive;
     private LocalDateTime lastLogin;

@@ -20,11 +20,11 @@ public class TestDataLoader implements CommandLineRunner {
     public void run(String... args) {
         if (authService.isUserTableEmpty()) {
             List<UserRegistrationRequest> testUsers = List.of(
-                    new UserRegistrationRequest("test1@gmail.com", "securepass1", "Andrew", "Khrushch", "+380967933134", "10 Kyivska st."),
-                    new UserRegistrationRequest("test2@gmail.com", "securepass2", "Maria", "Petrova", "+380967933135", "11 Kyivska st."),
-                    new UserRegistrationRequest("test3@gmail.com", "securepass3", "John", "Doe", "+380967933136", "12 Kyivska st."),
-                    new UserRegistrationRequest("test4@gmail.com", "securepass4", "Alice", "Johnson", "+380967933137", "13 Kyivska st."),
-                    new UserRegistrationRequest("test5@gmail.com", "securepass5", "Bob", "Smith", "+380967933138", "14 Kyivska st.")
+                    new UserRegistrationRequest("admin@gmail.com", "securepass", "Andrew", "Khrushch", "+380967933134", "10 Kyivska st.", "admin"),
+                    new UserRegistrationRequest("product_manager1@gmail.com", "securepass", "Maria", "Petrova", "+380967933135", "11 Kyivska st.", "product_manager"),
+                    new UserRegistrationRequest("product_manager2@gmail.com", "securepass", "John", "Doe", "+380967933136", "12 Kyivska st.", "product_manager"),
+                    new UserRegistrationRequest("user1@gmail.com", "securepass", "Alice", "Johnson", "+380967933137", "13 Kyivska st.", "user"),
+                    new UserRegistrationRequest("user2@gmail.com", "securepass", "Bob", "Smith", "+380967933138", "14 Kyivska st.", "user")
             );
             testUsers.forEach(this::registerTestUser);
         }

@@ -37,4 +37,6 @@ public class UserRegistrationRequest {
     @NotBlank(message = "Address cannot be blank")
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
+
+    private String role;
 }

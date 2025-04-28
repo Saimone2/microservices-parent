@@ -5,13 +5,14 @@ import com.sa1mone.request.UserUpdateRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public interface UserService {
     User saveUser(User user);
-    User getUserById(Long id);
-    User updateUser(Long id, User updatedUser);
+    User getUserById(UUID id);
+    User updateUser(UUID id, User updatedUser);
     List<User> getAllUsers();
-    void deactivateUser(Long id);
+    void deactivateUser(UUID id);
     boolean updateLastLogin(String email, LocalDateTime lastLogin);
     boolean updateUserInfo(String email, UserUpdateRequest userUpdateRequest);
 }

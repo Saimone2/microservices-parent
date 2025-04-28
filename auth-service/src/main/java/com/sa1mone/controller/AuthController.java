@@ -22,6 +22,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
+        request.setRole("user");
+
         authService.registerUser(
                 authService.buildKeycloakRequest(request),
                 authService.buildUserServiceRequest(request)

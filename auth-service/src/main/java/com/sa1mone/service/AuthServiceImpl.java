@@ -31,15 +31,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void registerUser(Map<String, Object> userDataKeycloak, Map<String, Object> userDataService) {
         validateUserData(userDataKeycloak);
+
         String url = buildUrl("admin/realms/" + properties.getRealm() + "/users");
         try {
-            restTemplate.postForEntity(
+            ResponseEntity<String> response = restTemplate.postForEntity(
                     url,
                     buildHttpEntity(userDataKeycloak, getAdminAccessToken(), MediaType.APPLICATION_JSON),
                     String.class
             );
-            saveUserToUserService(userDataService);
 
+            String userId = extractUserIdFromResponse(response);
+
+            assignRoleToUser(userId, (String) userDataService.get("role"));
+            saveUserToUserService(userDataService);
+            
         } catch (HttpClientErrorException e) {
             handleHttpError(e, "Error during user registration");
         } catch (Exception e) {
@@ -47,10 +52,37 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private void saveUserToUserService(Map<String, Object> userData) {
+    private void assignRoleToUser(String userId, String roleName) {
+        String roleUrl = buildUrl("admin/realms/" + properties.getRealm() + "/roles/" + roleName);
+        String mappingUrl = buildUrl("admin/realms/" + properties.getRealm() + "/users/" + userId + "/role-mappings/realm");
 
-        System.out.println(userData);
-        String userServiceUrl = "http://user-service:8081/user/save";
+        ResponseEntity<Map> roleResponse = restTemplate.exchange(
+                roleUrl,
+                HttpMethod.GET,
+                buildHttpEntity(null, getAdminAccessToken(), MediaType.APPLICATION_JSON),
+                Map.class
+        );
+
+        String roleId = Objects.requireNonNull(roleResponse.getBody()).get("id").toString();
+        Map<String, Object> roleData = Map.of(
+                "id", roleId,
+                "name", roleName
+        );
+
+        restTemplate.postForEntity(
+                mappingUrl,
+                buildHttpEntity(List.of(roleData), getAdminAccessToken(), MediaType.APPLICATION_JSON),
+                Void.class
+        );
+    }
+
+    private String extractUserIdFromResponse(ResponseEntity<String> response) {
+        String locationHeader = Objects.requireNonNull(response.getHeaders().getLocation()).toString();
+        return locationHeader.substring(locationHeader.lastIndexOf("/") + 1);
+    }
+
+    private void saveUserToUserService(Map<String, Object> userData) {
+        String userServiceUrl = "http://user-service:8081/management/user/save";
         try {
             restTemplate.postForEntity(
                     userServiceUrl,
@@ -199,6 +231,7 @@ public class AuthServiceImpl implements AuthService {
                 "username", request.getEmail(),
                 "email", request.getEmail(),
                 "enabled", true,
+                "emailVerified", true,
                 "firstName", request.getFirstName(),
                 "lastName", request.getLastName(),
                 "credentials", List.of(Map.of(
@@ -218,6 +251,7 @@ public class AuthServiceImpl implements AuthService {
                 "lastName", request.getLastName(),
                 "phoneNumber", request.getPhoneNumber(),
                 "address", request.getAddress(),
+                "role", request.getRole(),
                 "isActive", true
         );
     }
@@ -285,7 +319,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void updateLastLogin(String email) {
-        String userServiceUrl = "http://user-service:8081/user/update-last-login";
+        String userServiceUrl = "http://user-service:8081/management/user/update-last-login";
 
         Map<String, Object> requestBody = Map.of(
                 "email", email,
@@ -300,10 +334,10 @@ public class AuthServiceImpl implements AuthService {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(userServiceUrl, entity, String.class);
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("Failed to update lastLogin in user-service");
+                throw new RuntimeException("Failed to update last login");
             }
         } catch (HttpClientErrorException e) {
-            handleHttpError(e, "Error while updating lastLogin in user-service");
+            handleHttpError(e, "Error while updating last login");
         }
     }
 }

@@ -26,6 +26,9 @@ services:
     ports:
       - "8761:8761"
     container_name: eureka-server
+    depends_on:
+      config-server:
+        condition: service_healthy
     networks:
       - microservices-net
     healthcheck:
@@ -33,9 +36,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    depends_on:
-      config-server:
-        condition: service_healthy
 
   # API Gateway
   api-gateway:
@@ -91,6 +91,11 @@ services:
       - keycloak_data:/opt/keycloak/data
     networks:
       - microservices-net
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000;echo -e 'GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n' >&3;if [ $? -eq 0 ]; then echo 'Healthcheck Successful';exit 0;else echo 'Healthcheck Failed';exit 1;fi;"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # Authentication Service
   auth-service:
@@ -103,8 +108,10 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
-      - eureka-server
-      - keycloak
+      eureka-server:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     networks:
       - microservices-net
     healthcheck:
@@ -144,12 +151,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-postgres:5432/users_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres_pass
-    healthcheck:
-      test: [ "CMD", "wget", "--spider", "-q", "http://user-service:8081/actuator/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -159,6 +160,11 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://user-service:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # PostgreSQL for Catalog Service
   catalog-postgres:
