@@ -2,6 +2,7 @@ package com.sa1mone.service;
 
 import com.sa1mone.entity.Product;
 import com.sa1mone.request.ProductRequest;
+import com.sa1mone.response.ProductResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,4 +17,5 @@ public interface ProductService {
     Product checkProductExists(UUID productId);
     void activateProduct(UUID productId);
     void deactivateProduct(UUID productId);
+    List<ProductResponse> getActiveProducts();
 }

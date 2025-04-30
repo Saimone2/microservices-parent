@@ -13,4 +13,5 @@ public interface AuthService {
     Map<String, Object> buildUserServiceRequest(UserRegistrationRequest request);
     boolean updateUserInKeycloak(Map<String, Object> request);
     boolean isUserTableEmpty();
+    boolean activateUser(String email);
 }

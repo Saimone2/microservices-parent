@@ -262,6 +262,7 @@ public class AuthServiceImpl implements AuthService {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Email is required for updating user information");
         }
+        request.remove("email");
 
         String url = buildUrl("admin/realms/" + properties.getRealm() + "/users");
         List<Map<String, Object>> users;
@@ -269,7 +270,7 @@ public class AuthServiceImpl implements AuthService {
             ResponseEntity<List> response = restTemplate.exchange(
                     url + "?email=" + email,
                     HttpMethod.GET,
-                    buildHttpEntity(null, getAdminAccessToken(), MediaType.APPLICATION_JSON),
+                    buildHttpEntity(request, getAdminAccessToken(), MediaType.APPLICATION_JSON),
                     List.class
             );
             users = response.getBody();
@@ -283,7 +284,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String userId = (String) users.get(0).get("id");
-        request.remove("email");
+
         try {
             restTemplate.put(
                     url + "/" + userId,
@@ -315,6 +316,42 @@ public class AuthServiceImpl implements AuthService {
             return false;
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error while checking Keycloak users: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean activateUser(String email) {
+        String url = buildUrl("admin/realms/" + properties.getRealm() + "/users");
+        List<Map<String, Object>> users;
+        try {
+            ResponseEntity<List> response = restTemplate.exchange(
+                    url + "?email=" + email,
+                    HttpMethod.GET,
+                    buildHttpEntity(null, getAdminAccessToken(), MediaType.APPLICATION_JSON),
+                    List.class
+            );
+            users = response.getBody();
+        } catch (HttpClientErrorException e) {
+            handleHttpError(e, "Error while fetching user from Keycloak");
+            return false;
+        }
+
+        if (users == null || users.isEmpty()) {
+            return false;
+        }
+
+        String userId = (String) users.get(0).get("id");
+
+        try {
+            Map<String, Object> updateBody = Map.of("enabled", true);
+            restTemplate.put(
+                    url + "/" + userId,
+                    buildHttpEntity(updateBody, getAdminAccessToken(), MediaType.APPLICATION_JSON)
+            );
+            return true;
+        } catch (HttpClientErrorException e) {
+            handleHttpError(e, "Error while activating user in Keycloak");
+            return false;
         }
     }
 

@@ -10,8 +10,10 @@ import java.util.UUID;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
-    boolean existsByName(String name);
-
     @Query("SELECT p FROM Product p ORDER BY p.createdAt ASC LIMIT 4")
     List<Product> findTestProducts();
+
+    boolean existsByNameAndIdNot(String name, UUID id);
+    List<Product> findByIsActiveTrue();
+    boolean existsByName(String name);
 }

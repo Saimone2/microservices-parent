@@ -14,5 +14,8 @@ public interface UserService {
     List<User> getAllUsers();
     void deactivateUser(UUID id);
     boolean updateLastLogin(String email, LocalDateTime lastLogin);
-    boolean updateUserInfo(String email, UserUpdateRequest userUpdateRequest);
+    void activateUser(UUID id);
+    void updateUserByEmail(String email, UserUpdateRequest userUpdateRequest);
+    User getUserByEmail(String email);
+    boolean deactivateAuthenticatedUser(String email);
 }

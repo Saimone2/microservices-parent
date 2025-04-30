@@ -9,11 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/user")
@@ -26,64 +22,31 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID id) {
-        List<String> roles = Arrays.asList(rolesHeader.split(","));
-        if (roles.contains("admin")) {
-            User user = userService.getUserById(id);
-            return ResponseEntity.ok(user);
-        } else 
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-    }
-
-    @GetMapping("/all")
-    public ResponseEntity<List<User>> getAllUsers(@RequestHeader(value = "X-Roles") String rolesHeader) {
-        List<String> roles = Arrays.asList(rolesHeader.split(","));
-        if (roles.contains("admin")) {
-            List<User> users = userService.getAllUsers();
-            return ResponseEntity.ok(users);
-        } else
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID id, @Valid @RequestBody User user) {
-        List<String> roles = Arrays.asList(rolesHeader.split(","));
-        if (roles.contains("admin")) {
-            User updatedUser = userService.updateUser(id, user);
-            return ResponseEntity.ok(updatedUser);
-        } else
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-    @PostMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivateUser(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID id) {
-        List<String> roles = Arrays.asList(rolesHeader.split(","));
-        if (roles.contains("admin")) {
-            userService.deactivateUser(id);
-            return ResponseEntity.noContent().build();
-        } else
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-    }
-
-
-    @PutMapping("/me")
-    public ResponseEntity<Map<String, Object>> updateAuthenticatedUser(@RequestBody UserUpdateRequest userUpdateRequest, Principal principal) {
-        System.out.println(principal);
-        String email = principal.getName();
-
-        boolean isUpdated = userService.updateUserInfo(email, userUpdateRequest);
-
-        if (!isUpdated) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                    "success", false,
-                    "message", "User not found"
-            ));
-        }
-
+    @PostMapping("/me/update")
+    public ResponseEntity<Map<String, Object>> updateAuthenticatedUser(@RequestHeader("X-User-Email") String email, @Valid @RequestBody UserUpdateRequest userUpdateRequest) {
+        userService.updateUserByEmail(email, userUpdateRequest);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "User information updated successfully"
         ));
+    }
+
+    @PostMapping("/me/deactivate")
+    public ResponseEntity<Map<String, Object>> deactivateAuthenticatedUser(@RequestHeader("X-User-Email") String email) {
+        if(userService.deactivateAuthenticatedUser(email)) {
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "User deactivated successfully"
+            ));
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "success", false,
+                "message", "User has already been deactivated"
+        ));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<User> getAuthenticatedUser(@RequestHeader("X-User-Email") String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 }

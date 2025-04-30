@@ -2,6 +2,7 @@ package com.sa1mone.controller;
 
 import com.sa1mone.entity.Product;
 import com.sa1mone.request.ProductRequest;
+import com.sa1mone.response.ProductResponse;
 import com.sa1mone.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,12 +27,16 @@ public class ProductController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<Map<String, Object>> createProduct(@Valid @RequestBody ProductRequest request) {
-        productService.createProductPosition(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+    public ResponseEntity<Map<String, Object>> createProduct(@RequestHeader(value = "X-Roles") String rolesHeader, @Valid @RequestBody ProductRequest request) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            productService.createProductPosition(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "success", true,
                 "message", "Product added successfully"
-        ));
+            ));
+        } else
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @GetMapping("/{productId}")
@@ -44,13 +50,28 @@ public class ProductController {
     }
 
     @GetMapping("/all")
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    public ResponseEntity<List<Product>> getAllProducts(@RequestHeader(value = "X-Roles") String rolesHeader) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            return ResponseEntity.ok(productService.getAllProducts());
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ProductResponse>> getAllActiveProducts() {
+        return ResponseEntity.ok(productService.getActiveProducts());
     }
 
     @PutMapping("/{productId}")
-    public ResponseEntity<Product> updateProduct(@PathVariable UUID productId, @Valid @RequestBody ProductRequest request) {
-        return ResponseEntity.ok(productService.updateProduct(productId, request));
+    public ResponseEntity<Product> updateProduct(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID productId, @Valid @RequestBody ProductRequest request) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            return ResponseEntity.ok(productService.updateProduct(productId, request));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @GetMapping("/test")
@@ -60,14 +81,24 @@ public class ProductController {
     }
 
     @PostMapping("/{productId}/deactivate")
-    public ResponseEntity<Map<String, Object>> deactivateProduct(@PathVariable UUID productId) {
-        productService.deactivateProduct(productId);
-        return ResponseEntity.ok(Map.of("message", "Product deactivated successfully"));
+    public ResponseEntity<Map<String, Object>> deactivateProduct(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID productId) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            productService.deactivateProduct(productId);
+            return ResponseEntity.ok(Map.of("message", "Product deactivated successfully"));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @PostMapping("/{productId}/activate")
-    public ResponseEntity<Map<String, Object>> activateProduct(@PathVariable UUID productId) {
-        productService.activateProduct(productId);
-        return ResponseEntity.ok(Map.of("message", "Product activated successfully"));
+    public ResponseEntity<Map<String, Object>> activateProduct(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID productId) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            productService.activateProduct(productId);
+            return ResponseEntity.ok(Map.of("message", "Product activated successfully"));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 }

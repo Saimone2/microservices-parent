@@ -23,10 +23,15 @@ public class AddRolesGlobalFilter implements GlobalFilter, Ordered {
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
+
             List<String> roles = extractRolesFromToken(token);
+            String userEmail = extractUserEmailFromToken(token);
 
             ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                    .headers(headers -> headers.add("X-Roles", String.join(",", roles)))
+                    .headers(headers -> {
+                                headers.add("X-Roles", String.join(",", roles));
+                                headers.add("X-User-Email", userEmail);
+                            })
                     .build();
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
@@ -37,6 +42,11 @@ public class AddRolesGlobalFilter implements GlobalFilter, Ordered {
     @Override
     public int getOrder() {
         return -1;
+    }
+
+    private String extractUserEmailFromToken(String token) {
+        DecodedJWT jwt = JWT.decode(token);
+        return jwt.getClaim("email").asString();
     }
 
     private List<String> extractRolesFromToken(String token) {

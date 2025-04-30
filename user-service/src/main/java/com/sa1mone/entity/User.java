@@ -33,6 +33,7 @@ public class User {
 
     @NotBlank(message = "Email cannot be blank")
     @Email(message = "Email must be valid")
+    @Column(unique = true)
     private String email;
 
     @Pattern(regexp = "^[+]?\\d{10,15}$", message = "Phone number must be valid")
@@ -42,7 +43,6 @@ public class User {
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
 
-    @NotBlank
     @Enumerated(EnumType.STRING)
     private Role role;
 

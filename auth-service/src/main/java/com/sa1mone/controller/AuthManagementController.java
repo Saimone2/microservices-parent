@@ -18,7 +18,7 @@ public class AuthManagementController {
         this.authService = authService;
     }
 
-    @PutMapping("/update-user")
+    @PostMapping("/update-user")
     public ResponseEntity<Map<String, Object>> updateUser(@RequestBody Map<String, Object> request) {
         boolean isUpdated = authService.updateUserInKeycloak(request);
 
@@ -51,6 +51,25 @@ public class AuthManagementController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "User deactivated successfully"
+        ));
+    }
+
+    @PostMapping("/activate-user")
+    public ResponseEntity<Map<String, Object>> activateUser(@RequestBody Map<String, Object> request) {
+        String email = (String) request.get("email");
+
+        boolean isDeactivated = authService.activateUser(email);
+
+        if (!isDeactivated) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "success", false,
+                    "message", "User not found"
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "User activated successfully"
         ));
     }
 }

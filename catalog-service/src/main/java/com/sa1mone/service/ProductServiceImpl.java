@@ -3,6 +3,7 @@ package com.sa1mone.service;
 import com.sa1mone.entity.Product;
 import com.sa1mone.repo.ProductRepository;
 import com.sa1mone.request.ProductRequest;
+import com.sa1mone.response.ProductResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -58,13 +59,16 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
 
-        if (productRepository.existsByName(request.getName())) {
+        if (productRepository.existsByNameAndIdNot(request.getName(), productId)) {
             throw new IllegalArgumentException("Product from request already exists");
         }
-
         product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
+        if (request.getDescription() != null) {
+            product.setDescription(request.getDescription());
+        }
+        if (request.getPrice() != 0) {
+            product.setPrice(request.getPrice());
+        }
         product.setUpdatedAt(LocalDateTime.now());
 
         return productRepository.save(product);
@@ -109,5 +113,18 @@ public class ProductServiceImpl implements ProductService {
 
         product.setIsActive(false);
         productRepository.save(product);
+    }
+
+    @Override
+    public List<ProductResponse> getActiveProducts() {
+        return productRepository.findByIsActiveTrue().stream()
+                .map(product -> {
+                    ProductResponse response = new ProductResponse();
+                    response.setName(product.getName());
+                    response.setDescription(product.getDescription());
+                    response.setPrice(product.getPrice());
+                    response.setQuantity(product.getStockQuantity());
+                    return response;
+                }).toList();
     }
 }

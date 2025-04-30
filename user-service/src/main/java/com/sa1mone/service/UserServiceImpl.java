@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -79,9 +80,14 @@ public class UserServiceImpl implements UserService {
     public void deactivateUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        user.setIsActive(false);
-        deactivateUserInKeycloak(user.getEmail());
-        userRepository.save(user);
+
+        if(user.getIsActive()) {
+            user.setIsActive(false);
+            deactivateUserInKeycloak(user.getEmail());
+            userRepository.save(user);
+        } else {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User has already been deactivated");
+        }
     }
 
     @Override
@@ -96,27 +102,54 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean updateUserInfo(String email, UserUpdateRequest userUpdateRequest) {
+    public void updateUserByEmail(String email, UserUpdateRequest userUpdateRequest) {
         User user = userRepository.findByEmail(email);
-        if (user == null) {
-            return false;
+        if (user != null) {
+            if (userUpdateRequest.getFirstName() != null) {
+                user.setFirstName(userUpdateRequest.getFirstName());
+            }
+            if (userUpdateRequest.getLastName() != null) {
+                user.setLastName(userUpdateRequest.getLastName());
+            }
+            if (userUpdateRequest.getPhoneNumber() != null) {
+                user.setPhoneNumber(userUpdateRequest.getPhoneNumber());
+            }
+            if (userUpdateRequest.getAddress() != null) {
+                user.setAddress(userUpdateRequest.getAddress());
+            }
+            updateUserInKeycloak(email, userUpdateRequest);
+            userRepository.save(user);
         }
-        if (userUpdateRequest.getFirstName() != null) {
-            user.setFirstName(userUpdateRequest.getFirstName());
-        }
-        if (userUpdateRequest.getLastName() != null) {
-            user.setLastName(userUpdateRequest.getLastName());
-        }
-        if (userUpdateRequest.getPhoneNumber() != null) {
-            user.setPhoneNumber(userUpdateRequest.getPhoneNumber());
-        }
-        if (userUpdateRequest.getAddress() != null) {
-            user.setAddress(userUpdateRequest.getAddress());
-        }
+    }
 
-        updateUserInKeycloak(email);
+    @Override
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public boolean deactivateAuthenticatedUser(String email) {
+        User user = userRepository.findByEmail(email);
+
+        user.setIsActive(false);
         userRepository.save(user);
+
+        deactivateUserInKeycloak(email);
         return true;
+    }
+
+    @Override
+    public void activateUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if(!user.getIsActive()) {
+            user.setIsActive(true);
+            activateUserInKeycloak(user.getEmail());
+            userRepository.save(user);
+        } else {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User has already been activated");
+        }
     }
 
     private void deactivateUserInKeycloak(String email) {
@@ -143,12 +176,41 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private void updateUserInKeycloak(String email) {
-        String authServiceUrl = "http://auth-service:8087/management/auth/update-user";
+    private void activateUserInKeycloak(String email) {
+        String authServiceUrl = "http://auth-service:8087/management/auth/activate-user";
 
         Map<String, Object> requestBody = Map.of(
                 "email", email
         );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    authServiceUrl,
+                    new HttpEntity<>(requestBody, headers),
+                    Map.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("Failed to activate user in Keycloak");
+            }
+
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Error while activating user in Keycloak: " + e.getMessage(), e);
+        }
+    }
+
+    private void updateUserInKeycloak(String email, UserUpdateRequest userUpdateRequest) {
+        String authServiceUrl = "http://auth-service:8087/management/auth/update-user";
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("email", email);
+        if (userUpdateRequest.getFirstName() != null) {
+            requestBody.put("firstName", userUpdateRequest.getFirstName());
+        }
+        if (userUpdateRequest.getLastName() != null) {
+            requestBody.put("lastName", userUpdateRequest.getLastName());
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

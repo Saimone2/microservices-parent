@@ -10,7 +10,7 @@ spring:
         registration:
           keycloak:
             client-id: auth-service
-            client-secret: KjFZTEOu91VVBH9TewsWaCOxmx8LSUxw
+            client-secret: Vm0CuOmMgprSVfOfyP0rHD9uqNjQ3lTR
             scope: openid
             provider: keycloak
         provider:
@@ -21,7 +21,7 @@ keycloak:
   auth-server-url: http://keycloak:8080
   realm: ecommerce-realm
   client-id: auth-service
-  client-secret: KjFZTEOu91VVBH9TewsWaCOxmx8LSUxw
+  client-secret: Vm0CuOmMgprSVfOfyP0rHD9uqNjQ3lTR
 
 eureka:
   client:
