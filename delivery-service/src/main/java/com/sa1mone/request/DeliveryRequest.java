@@ -2,13 +2,16 @@ package com.sa1mone.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 import java.util.UUID;
 
-public class DeliveryRequestDTO {
+@Data
+public class DeliveryRequest {
     @NotNull
     private UUID orderId;
-
+    @NotNull
+    private UUID userId;
     @NotBlank
-    private String address;
+    private String deliveryAddress;
 }

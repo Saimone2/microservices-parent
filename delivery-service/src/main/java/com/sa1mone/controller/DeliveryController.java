@@ -1,8 +1,15 @@
 package com.sa1mone.controller;
 
+import com.sa1mone.response.DeliveryResponse;
 import com.sa1mone.service.DeliveryService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/delivery")
@@ -15,26 +22,8 @@ public class DeliveryController {
         this.deliveryService = deliveryService;
     }
 
-//    @PostMapping
-//    public Delivery createDelivery(@RequestParam UUID orderId, @RequestParam String address) {
-//        return deliveryService.createDelivery(orderId, address);
-//    }
-//
-//    @PutMapping("/{deliveryId}")
-//    public Delivery updateDeliveryStatus(@PathVariable UUID deliveryId, @RequestParam DeliveryStatus status) {
-//        return deliveryService.updateDeliveryStatus(deliveryId, status);
-//    }
-//
-//    @GetMapping("/order/{orderId}")
-//    public Delivery getDeliveryByOrderId(@PathVariable UUID orderId) {
-//        return deliveryService.getDeliveryByOrderId(orderId)
-//                .orElseThrow(() -> new RuntimeException("Delivery not found for order"));
-//    }
-//
-//    @GetMapping("/track/{orderId}")
-//    public ResponseEntity<String> trackOrder(@PathVariable String orderId) {
-//        // Логіка отримання статусу замовлення
-//        String deliveryStatus = deliveryService.getDeliveryStatus(orderId);
-//        return ResponseEntity.ok(deliveryStatus);
-//    }
+    @GetMapping("/me")
+    public ResponseEntity<List<DeliveryResponse>> getAuthenticatedUserDeliveries(@RequestHeader("X-User-Email") String email) {
+        return ResponseEntity.ok(deliveryService.getUserDeliveriesByEmail(email));
+    }
 }

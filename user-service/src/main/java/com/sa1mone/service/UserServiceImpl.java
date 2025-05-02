@@ -1,9 +1,11 @@
 package com.sa1mone.service;
 
 import com.sa1mone.entity.User;
+import com.sa1mone.enums.Role;
 import com.sa1mone.messaging.UserPublisher;
 import com.sa1mone.repo.UserRepository;
 import com.sa1mone.request.UserUpdateRequest;
+import com.sa1mone.response.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
@@ -33,7 +35,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User saveUser(User user) {
+    public User saveUser(Map<String, Object> userData) {
+        User user = mapUserDataToEntity(userData);
+
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This email is already in use");
         }
@@ -47,6 +51,25 @@ public class UserServiceImpl implements UserService {
         userPublisher.publishUserUpdate("user.created",
                 "User " + savedUser.getFirstName() + " " + savedUser.getLastName() + " created with email: " + savedUser.getEmail());
         return savedUser;
+    }
+
+    private User mapUserDataToEntity(Map<String, Object> userData) {
+        User user = new User();
+        user.setFirstName((String) userData.get("firstName"));
+        user.setLastName((String) userData.get("lastName"));
+        user.setEmail((String) userData.get("email"));
+        user.setPhoneNumber((String) userData.get("phoneNumber"));
+        user.setAddress((String) userData.get("address"));
+        user.setIsActive(true);
+        user.setCreatedAt(LocalDateTime.now());
+
+        String roleString = (String) userData.get("role");
+        if (roleString != null) {
+            user.setRole(Role.valueOf(roleString.toUpperCase()));
+        } else {
+            user.setRole(Role.USER);
+        }
+        return user;
     }
 
     @Override
@@ -136,6 +159,18 @@ public class UserServiceImpl implements UserService {
 
         deactivateUserInKeycloak(email);
         return true;
+    }
+
+    @Override
+    public UserResponse mapUserToResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setAddress(user.getAddress());
+        return response;
     }
 
     @Override

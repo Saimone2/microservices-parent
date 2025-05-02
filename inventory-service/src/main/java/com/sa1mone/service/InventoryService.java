@@ -1,6 +1,6 @@
 package com.sa1mone.service;
 
-import com.sa1mone.dto.ProductDTO;
+import com.sa1mone.response.ProductDTO;
 import com.sa1mone.entity.Inventory;
 import com.sa1mone.request.InventoryRequest;
 

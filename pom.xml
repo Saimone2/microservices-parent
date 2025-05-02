@@ -12,7 +12,6 @@
         <module>user-service</module>
         <module>order-service</module>
         <module>inventory-service</module>
-        <module>payment-service</module>
         <module>catalog-service</module>
         <module>delivery-service</module>
         <module>auth-service</module>

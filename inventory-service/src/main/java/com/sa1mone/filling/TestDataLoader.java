@@ -1,6 +1,6 @@
 package com.sa1mone.filling;
 
-import com.sa1mone.dto.ProductDTO;
+import com.sa1mone.response.ProductDTO;
 import com.sa1mone.entity.Warehouse;
 import com.sa1mone.request.InventoryRequest;
 import com.sa1mone.request.WarehouseRequest;

@@ -29,8 +29,9 @@ public class Order {
     @Min(0)
     private double totalPrice;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime deliveredAt;
 
     @NotBlank
     private String deliveryAddress;

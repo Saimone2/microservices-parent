@@ -11,4 +11,6 @@ import java.util.UUID;
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     Optional<Delivery> findByOrderId(UUID orderId);
+    Optional<Delivery> getDeliveryById(UUID id);
+    List<Delivery> findByUserId(UUID id);
 }

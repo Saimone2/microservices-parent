@@ -20,6 +20,9 @@ public class Delivery {
     @NotNull
     private UUID orderId;
 
+    @NotNull
+    private UUID userId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DeliveryStatus status = DeliveryStatus.PENDING;
@@ -27,6 +30,7 @@ public class Delivery {
     @NotBlank
     private String address;
 
-    private LocalDateTime shippedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private LocalDateTime deliveredAt;
 }

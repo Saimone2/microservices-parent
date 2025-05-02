@@ -14,8 +14,9 @@ public interface ProductService {
     Product updateProduct(UUID productId, ProductRequest request);
     boolean isProductTableEmpty();
     List<Product> getTestProducts();
-    Product checkProductExists(UUID productId);
+    boolean checkProductExists(UUID productId);
     void activateProduct(UUID productId);
     void deactivateProduct(UUID productId);
     List<ProductResponse> getActiveProducts();
+    ProductResponse mapProductToResponse(Product product);
 }

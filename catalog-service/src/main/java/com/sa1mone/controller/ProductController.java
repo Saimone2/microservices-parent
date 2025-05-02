@@ -44,9 +44,9 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProductById(productId));
     }
 
-    @GetMapping("/{productId}/exists")
-    public ResponseEntity<Product> checkProductExists(@PathVariable UUID productId) {
-        return ResponseEntity.ok(productService.checkProductExists(productId));
+    @GetMapping("/management/{productId}/exists")
+    public boolean checkProductExists(@PathVariable UUID productId) {
+        return productService.checkProductExists(productId);
     }
 
     @GetMapping("/all")

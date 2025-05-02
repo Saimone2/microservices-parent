@@ -85,8 +85,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product checkProductExists(UUID productId) {
-        return productRepository.findById(productId).orElseThrow(() -> new EntityNotFoundException("Product not found"));
+    public boolean checkProductExists(UUID productId) {
+        return productRepository.findById(productId).isPresent();
     }
 
     @Override
@@ -126,5 +126,15 @@ public class ProductServiceImpl implements ProductService {
                     response.setQuantity(product.getStockQuantity());
                     return response;
                 }).toList();
+    }
+
+    @Override
+    public ProductResponse mapProductToResponse(Product product) {
+        ProductResponse response = new ProductResponse();
+        response.setName(product.getName());
+        response.setDescription(product.getDescription());
+        response.setPrice(product.getPrice());
+        response.setQuantity(product.getStockQuantity());
+        return response;
     }
 }

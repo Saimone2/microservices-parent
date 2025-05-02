@@ -5,8 +5,11 @@ import com.sa1mone.request.InventoryRequest;
 import com.sa1mone.service.InventoryService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,23 +25,43 @@ public class InventoryController {
     }
 
     @GetMapping("/{productId}")
-    public List<Inventory> getInventoryByProductId(@PathVariable UUID productId) {
-        return inventoryService.getInventoryByProductId(productId)
-                .orElseThrow(() -> new EntityNotFoundException("Inventory not found for product"));
+    public ResponseEntity<List<Inventory>> getInventoryByProductId(@RequestHeader(value = "X-Roles") String rolesHeader, @PathVariable UUID productId) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            return ResponseEntity.ok(inventoryService.getInventoryByProductId(productId)
+                    .orElseThrow(() -> new EntityNotFoundException("Inventory not found for product")));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @GetMapping("/all")
-    public List<Inventory> getAllInventory() {
-        return inventoryService.getAllInventory();
+    public ResponseEntity<List<Inventory>> getAllInventory(@RequestHeader(value = "X-Roles") String rolesHeader) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            return ResponseEntity.ok(inventoryService.getAllInventory());
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @PostMapping("/add")
-    public Inventory addInventory(@RequestBody InventoryRequest request) {
-        return inventoryService.addInventory(request);
+    public ResponseEntity<Inventory> addInventory(@RequestHeader(value = "X-Roles") String rolesHeader, @RequestBody InventoryRequest request) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            return ResponseEntity.ok(inventoryService.addInventory(request));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @PutMapping
-    public Inventory updateInventory(@RequestParam UUID productId, @RequestBody InventoryRequest request) {
-        return inventoryService.updateInventory(productId, request);
+    public ResponseEntity<Inventory> updateInventory(@RequestHeader(value = "X-Roles") String rolesHeader, @RequestParam UUID productId, @RequestBody InventoryRequest request) {
+        List<String> roles = Arrays.asList(rolesHeader.split(","));
+        if (roles.contains("admin") || roles.contains("product_manager")) {
+            return ResponseEntity.ok(inventoryService.updateInventory(productId, request));
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 }

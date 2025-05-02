@@ -1,5 +1,6 @@
 package com.sa1mone.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,7 @@ public class OrderItem {
 
     @NotNull
     @ManyToOne
+    @JsonIgnore
     private Order order;
 
     @NotNull

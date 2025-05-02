@@ -1,6 +1,6 @@
 package com.sa1mone.service;
 
-import com.sa1mone.dto.ProductDTO;
+import com.sa1mone.response.ProductDTO;
 import com.sa1mone.entity.Inventory;
 import com.sa1mone.entity.Warehouse;
 import com.sa1mone.repo.InventoryRepository;
@@ -71,11 +71,11 @@ public class InventoryServiceImpl implements InventoryService {
 
     public boolean checkProductExists(UUID productId) {
         try {
-            restTemplate.getForObject(
-                    "http://catalog-service:8082/catalog/" + productId + "/exists",
+            Boolean response = restTemplate.getForObject(
+                    "http://catalog-service:8082/product/management/" + productId + "/exists",
                     Boolean.class
             );
-            return true;
+            return response != null && response;
         } catch (RestClientException e) {
             return false;
         }
@@ -92,6 +92,7 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new EntityNotFoundException("Warehouse not found"));
 
         boolean productExists = checkProductExists(request.getProductId());
+
         if (!productExists) {
             throw new IllegalArgumentException("Product not found");
         }
@@ -116,6 +117,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public Inventory updateInventory(UUID productId, InventoryRequest request) {
         boolean productExists = checkProductExists(productId);
+
         if (!productExists) {
             throw new EntityNotFoundException("Product not found");
         }

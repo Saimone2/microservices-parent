@@ -1,15 +1,12 @@
 package com.sa1mone.controller;
 
 import com.sa1mone.entity.User;
-import com.sa1mone.enums.Role;
+import com.sa1mone.response.UserResponse;
 import com.sa1mone.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -46,9 +43,7 @@ public class UserManagementController {
 
     @PostMapping("/save")
     public ResponseEntity<Map<String, Object>> saveUser(@RequestBody Map<String, Object> userData) {
-        User user = mapUserDataToEntity(userData);
-
-        User savedUser = userService.saveUser(user);
+        User savedUser = userService.saveUser(userData);
 
         Map<String, Object> response = Map.of(
                 "success", true,
@@ -58,22 +53,17 @@ public class UserManagementController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    private User mapUserDataToEntity(Map<String, Object> userData) {
-        User user = new User();
-        user.setFirstName((String) userData.get("firstName"));
-        user.setLastName((String) userData.get("lastName"));
-        user.setEmail((String) userData.get("email"));
-        user.setPhoneNumber((String) userData.get("phoneNumber"));
-        user.setAddress((String) userData.get("address"));
-        user.setIsActive(true);
-        user.setCreatedAt(LocalDateTime.now());
+    @GetMapping("/find-by-email")
+    public ResponseEntity<?> getUserByEmail(@RequestParam("email") String email) {
+        User user = userService.getUserByEmail(email);
 
-        String roleString = (String) userData.get("role");
-        if (roleString != null) {
-            user.setRole(Role.valueOf(roleString.toUpperCase()));
-        } else {
-            user.setRole(Role.USER);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "success", false,
+                    "message", "User not found"
+            ));
         }
-        return user;
+        UserResponse userResponse = userService.mapUserToResponse(user);
+        return ResponseEntity.ok(userResponse);
     }
 }
