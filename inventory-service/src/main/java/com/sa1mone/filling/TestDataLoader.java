@@ -35,7 +35,7 @@ public class TestDataLoader implements CommandLineRunner {
 
             if (inventoryService.isInventoryTableEmpty()) {
                 List<InventoryRequest> testInventory = getInventoryRequests();
-                testInventory.forEach(inventoryService::createLeftovers);
+                testInventory.forEach(inventoryService::addInventory);
             }
         }
     }

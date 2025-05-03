@@ -11,9 +11,9 @@ import java.util.UUID;
 public interface InventoryService {
     Optional<List<Inventory>> getInventoryByProductId(UUID productId);
     boolean isInventoryTableEmpty();
-    void createLeftovers(InventoryRequest inventoryRequest);
     List<ProductDTO> getTestProducts();
     List<Inventory> getAllInventory();
     Inventory addInventory(InventoryRequest request);
     Inventory updateInventory(UUID productId, InventoryRequest request);
+    boolean reserveStock(UUID productId, int quantity);
 }

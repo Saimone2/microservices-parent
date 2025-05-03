@@ -2,6 +2,15 @@ version: "3.9"
 
 services:
 
+  # K6 Load
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./k6-test:/scripts
+    networks:
+      - microservices-net
+    entrypoint: [ "k6", "run", "/scripts/auth-load-test.js" ]
+
   # Config Server
   config-server:
     build:

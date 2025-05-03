@@ -1,11 +1,13 @@
 package com.sa1mone.service;
 
+import com.sa1mone.request.StockUpdateMessage;
 import com.sa1mone.response.ProductDTO;
 import com.sa1mone.entity.Inventory;
 import com.sa1mone.entity.Warehouse;
 import com.sa1mone.repo.InventoryRepository;
 import com.sa1mone.request.InventoryRequest;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
@@ -16,6 +18,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,12 +28,14 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
     private final WarehouseService warehouseService;
     private final RestTemplate restTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public InventoryServiceImpl(InventoryRepository inventoryRepository, WarehouseService warehouseService, RestTemplateBuilder restTemplate) {
+    public InventoryServiceImpl(InventoryRepository inventoryRepository, WarehouseService warehouseService, RestTemplateBuilder restTemplate, RabbitTemplate rabbitTemplate) {
         this.inventoryRepository = inventoryRepository;
         this.warehouseService = warehouseService;
         this.restTemplate = restTemplate.build();
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
@@ -41,20 +46,6 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public boolean isInventoryTableEmpty() {
         return inventoryRepository.count() == 0;
-    }
-
-    @Override
-    public void createLeftovers(InventoryRequest inventoryRequest) {
-        Warehouse warehouse = warehouseService.getWarehouseById(inventoryRequest.getWarehouseId()).orElseThrow(
-                () -> new EntityNotFoundException("Warehouse not found"));
-
-        Inventory inventory = new Inventory();
-        inventory.setProductId(inventoryRequest.getProductId());
-        inventory.setWarehouse(warehouse);
-        inventory.setAvailableQuantity(inventoryRequest.getAvailableQuantity());
-        inventory.setReservedQuantity(0);
-
-        inventoryRepository.save(inventory);
     }
 
     @Override
@@ -99,19 +90,27 @@ public class InventoryServiceImpl implements InventoryService {
 
         Optional<Inventory> existingInventory = inventoryRepository.findByProductIdAndWarehouseId(request.getProductId(), request.getWarehouseId());
 
+        Inventory inventory;
         if (existingInventory.isPresent()) {
-            Inventory inventory = existingInventory.get();
+            inventory = existingInventory.get();
             inventory.setAvailableQuantity(inventory.getAvailableQuantity() + request.getAvailableQuantity());
-            return inventoryRepository.save(inventory);
+        } else {
+            inventory = new Inventory();
+            inventory.setProductId(request.getProductId());
+            inventory.setWarehouse(warehouse);
+            inventory.setAvailableQuantity(request.getAvailableQuantity());
+            inventory.setReservedQuantity(0);
         }
 
-        Inventory newInventory = new Inventory();
-        newInventory.setProductId(request.getProductId());
-        newInventory.setWarehouse(warehouse);
-        newInventory.setAvailableQuantity(request.getAvailableQuantity());
-        newInventory.setReservedQuantity(0);
+        Inventory savedInventory = inventoryRepository.save(inventory);
+        sendStockUpdate(savedInventory.getProductId(), savedInventory.getAvailableQuantity());
 
-        return inventoryRepository.save(newInventory);
+        return savedInventory;
+    }
+
+    public void sendStockUpdate(UUID productId, int quantity) {
+        StockUpdateMessage message = new StockUpdateMessage(productId.toString(), quantity);
+        rabbitTemplate.convertAndSend("inventory.exchange", "inventory.new_stock", message);
     }
 
     @Override
@@ -127,5 +126,40 @@ public class InventoryServiceImpl implements InventoryService {
 
         inventory.setAvailableQuantity(request.getAvailableQuantity());
         return inventoryRepository.save(inventory);
+    }
+
+    @Override
+    public boolean reserveStock(UUID productId, int quantity) {
+        List<Inventory> inventories = inventoryRepository.findByProductId(productId).orElseThrow(() ->
+                new EntityNotFoundException("Product not found in any warehouse")
+        );
+
+        int remainingQuantity = quantity;
+        int totalReserved = 0;
+
+        for (Inventory inventory : inventories) {
+            if (remainingQuantity <= 0) break;
+
+            int available = inventory.getAvailableQuantity();
+            int toReserve = Math.min(available, remainingQuantity);
+
+            inventory.setAvailableQuantity(available - toReserve);
+            inventory.setReservedQuantity(inventory.getReservedQuantity() + toReserve);
+            inventoryRepository.save(inventory);
+
+            remainingQuantity -= toReserve;
+            totalReserved += toReserve;
+        }
+
+        if (totalReserved > 0) {
+            sendStockReservedMessage(productId, totalReserved);
+        }
+
+        return remainingQuantity == 0;
+    }
+
+    public void sendStockReservedMessage(UUID productId, int reservedQuantity) {
+        rabbitTemplate.convertAndSend("inventory.exchange", "inventory.reserved_stock",
+                Map.of("productId", productId.toString(), "reservedQuantity", reservedQuantity));
     }
 }

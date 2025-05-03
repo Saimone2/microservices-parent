@@ -1,6 +1,7 @@
 package com.sa1mone.service;
 
 import com.sa1mone.request.DeliveryRequest;
+import com.sa1mone.request.ReserveStockRequest;
 import com.sa1mone.response.OrderResponse;
 import com.sa1mone.response.ProductResponse;
 import com.sa1mone.response.UserResponse;
@@ -10,6 +11,7 @@ import com.sa1mone.enums.OrderStatus;
 import com.sa1mone.repo.OrderRepository;
 import com.sa1mone.request.OrderRequest;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.ws.rs.ServiceUnavailableException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpStatus;
@@ -64,6 +66,12 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderItem> orderItems = orderRequest.getItems().stream()
                 .map(item -> {
+                    boolean isAvailable = checkStock(item.getProductId(), item.getQuantity());
+
+                    if (!isAvailable) {
+                        throw new IllegalArgumentException("Not enough stock for product: " + item.getProductId());
+                    }
+
                     OrderItem orderItem = new OrderItem();
                     orderItem.setOrder(order);
                     orderItem.setProductId(item.getProductId());
@@ -83,8 +91,28 @@ public class OrderServiceImpl implements OrderService {
         order.setItems(orderItems);
 
         Order savedOrder = orderRepository.save(order);
+
+        orderItems.forEach(item -> reserveStock(item.getProductId(), item.getQuantity()));
+
         createDeliveryForOrder(savedOrder);
         return savedOrder;
+    }
+
+    public void reserveStock(UUID productId, int quantity) {
+        String inventoryServiceUrl = "http://inventory-service:8085/management/inventory/reserve";
+
+        ReserveStockRequest request = new ReserveStockRequest(productId, quantity);
+
+        try {
+            restTemplate.postForEntity(inventoryServiceUrl, request, Void.class);
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Inventory Service is unavailable: " + e.getMessage());
+        }
+    }
+
+    public boolean checkStock(UUID productId, int quantity) {
+        ProductResponse product = fetchProductInfoById(productId);
+        return product.getQuantity() >= quantity;
     }
 
     private void createDeliveryForOrder(Order order) {
@@ -158,26 +186,32 @@ public class OrderServiceImpl implements OrderService {
     private UserResponse fetchUserInfoByEmail(String email) {
         String userServiceUrl = "http://user-service:8081/management/user/find-by-email?email=" + email;
 
-        ResponseEntity<UserResponse> response = restTemplate.getForEntity(userServiceUrl, UserResponse.class);
+        try {
+            ResponseEntity<UserResponse> response = restTemplate.getForEntity(userServiceUrl, UserResponse.class);
 
-        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-            return response.getBody();
-        } else {
-            throw new EntityNotFoundException("User not found");
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                throw new EntityNotFoundException("User not found");
+            }
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("User Service is unavailable: " + e.getMessage());
         }
     }
 
     private ProductResponse fetchProductInfoById(UUID productId) {
-        String productServiceUrl = "http://catalog-service:8082/management/product/find-product-by-id?id=" + productId.toString();
+        String productServiceUrl = "http://catalog-service:8082/management/product/find-product-by-id?id=" + productId;
 
-        System.out.println(productServiceUrl);
+        try {
+            ResponseEntity<ProductResponse> response = restTemplate.getForEntity(productServiceUrl, ProductResponse.class);
 
-        ResponseEntity<ProductResponse> response = restTemplate.getForEntity(productServiceUrl, ProductResponse.class);
-
-        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-            return response.getBody();
-        } else {
-            throw new EntityNotFoundException("Product not found");
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            } else {
+                throw new EntityNotFoundException("Product not found");
+            }
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Catalog Service is unavailable: " + e.getMessage());
         }
     }
 }

@@ -19,4 +19,6 @@ public interface ProductService {
     void deactivateProduct(UUID productId);
     List<ProductResponse> getActiveProducts();
     ProductResponse mapProductToResponse(Product product);
+    void updateProductStock(UUID productId, int quantity);
+    void reserveProductStock(UUID productId, int reservedQuantity);
 }
