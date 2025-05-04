@@ -6,6 +6,7 @@ import com.sa1mone.request.OrderRequest;
 import com.sa1mone.response.OrderResponse;
 import com.sa1mone.service.OrderService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    @Autowired
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
@@ -38,6 +40,16 @@ public class OrderController {
     @GetMapping("/{orderId}/status")
     public ResponseEntity<Map<String, Object>> checkOrderStatus(@RequestHeader("X-User-Email") String email, @PathVariable("orderId") UUID orderId) {
         OrderStatus status = orderService.checkOrderStatus(email, orderId);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "orderId", orderId,
+                "status", status.toString()
+        ));
+    }
+
+    @DeleteMapping("/{orderId}/cancel")
+    public ResponseEntity<Map<String, Object>> cancelOrder(@RequestHeader("X-User-Email") String email, @PathVariable("orderId") UUID orderId) {
+        OrderStatus status = orderService.cancelOrder(email, orderId);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "orderId", orderId,

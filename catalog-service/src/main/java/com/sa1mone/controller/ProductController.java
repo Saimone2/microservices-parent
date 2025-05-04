@@ -44,11 +44,6 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProductById(productId));
     }
 
-    @GetMapping("/management/{productId}/exists")
-    public boolean checkProductExists(@PathVariable UUID productId) {
-        return productService.checkProductExists(productId);
-    }
-
     @GetMapping("/all")
     public ResponseEntity<List<Product>> getAllProducts(@RequestHeader(value = "X-Roles") String rolesHeader) {
         List<String> roles = Arrays.asList(rolesHeader.split(","));

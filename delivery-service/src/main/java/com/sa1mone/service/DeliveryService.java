@@ -14,4 +14,5 @@ public interface DeliveryService {
     DeliveryStatus getDeliveryStatus(UUID orderId);
     UUID createDelivery(DeliveryRequest request);
     List<DeliveryResponse> getUserDeliveriesByEmail(String email);
+    Delivery cancelDelivery(UUID orderId);
 }

@@ -16,4 +16,5 @@ public interface InventoryService {
     Inventory addInventory(InventoryRequest request);
     Inventory updateInventory(UUID productId, InventoryRequest request);
     boolean reserveStock(UUID productId, int quantity);
+    boolean restoreStock(UUID productId, int quantity);
 }

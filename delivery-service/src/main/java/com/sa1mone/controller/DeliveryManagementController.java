@@ -1,5 +1,6 @@
 package com.sa1mone.controller;
 
+import com.sa1mone.entity.Delivery;
 import com.sa1mone.request.DeliveryRequest;
 import com.sa1mone.service.DeliveryService;
 import jakarta.validation.Valid;
@@ -29,6 +30,17 @@ public class DeliveryManagementController {
                 "success", true,
                 "message", "Delivery created successfully",
                 "deliveryId", deliveryId
+        ));
+    }
+
+    @DeleteMapping("/{orderId}/cancel")
+    public ResponseEntity<Map<String, Object>> cancelDelivery(@PathVariable("orderId") UUID orderId) {
+        Delivery delivery = deliveryService.cancelDelivery(orderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of(
+                "success", true,
+                "message", "Delivery canceled successfully",
+                "deliveryId", delivery.getId()
         ));
     }
 }

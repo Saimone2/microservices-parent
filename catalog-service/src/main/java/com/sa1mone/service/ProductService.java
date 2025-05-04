@@ -21,4 +21,5 @@ public interface ProductService {
     ProductResponse mapProductToResponse(Product product);
     void updateProductStock(UUID productId, int quantity);
     void reserveProductStock(UUID productId, int reservedQuantity);
+    void restoreProductStock(UUID productId, int restoredQuantity);
 }

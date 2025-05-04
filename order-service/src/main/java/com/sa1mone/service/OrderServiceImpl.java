@@ -14,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.ServiceUnavailableException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -152,6 +153,55 @@ public class OrderServiceImpl implements OrderService {
             throw new EntityNotFoundException("This order was not found for user");
         }
         return order.getStatus();
+    }
+
+    @Override
+    public OrderStatus cancelOrder(String email, UUID orderId) {
+        UserResponse userResponse = fetchUserInfoByEmail(email);
+        UUID userId = userResponse.getId();
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("This order was not found for user"));
+
+        if (!order.getUserId().equals(userId)) {
+            throw new EntityNotFoundException("This order was not found for user");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Order is already canceled");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        for (OrderItem item : order.getItems()) {
+            restoreStock(item.getProductId(), item.getQuantity());
+        }
+
+        cancelDelivery(order.getId());
+        return order.getStatus();
+    }
+
+    private void cancelDelivery(UUID orderId) {
+        String url = "http://delivery-service:8086/management/delivery/" + orderId + "/cancel";
+
+        try {
+            restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Failed to cancel delivery: " + e.getMessage());
+        }
+    }
+
+    public void restoreStock(UUID productId, int quantity) {
+        String inventoryServiceUrl = "http://inventory-service:8085/management/inventory/restore";
+
+        ReserveStockRequest request = new ReserveStockRequest(productId, quantity);
+
+        try {
+            restTemplate.postForEntity(inventoryServiceUrl, request, Void.class);
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Inventory Service is unavailable: " + e.getMessage());
+        }
     }
 
     private OrderResponse mapOrderToResponse(Order order) {

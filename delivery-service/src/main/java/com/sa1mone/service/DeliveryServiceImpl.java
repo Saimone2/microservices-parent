@@ -76,6 +76,17 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     }
 
+    @Override
+    public Delivery cancelDelivery(UUID orderId) {
+        Delivery delivery = deliveryRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Delivery not found for this order"));
+
+        delivery.setStatus(DeliveryStatus.CANCELLED);
+        delivery.setUpdatedAt(LocalDateTime.now());
+
+        return deliveryRepository.save(delivery);
+    }
+
     private DeliveryResponse mapDeliveryToResponse(Delivery delivery) {
         DeliveryResponse response = new DeliveryResponse();
         response.setId(delivery.getId());

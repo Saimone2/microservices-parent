@@ -5,10 +5,7 @@ import com.sa1mone.response.ProductResponse;
 import com.sa1mone.service.ProductService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
@@ -35,5 +32,10 @@ public class ProductManagementController {
         }
         ProductResponse productResponse = productService.mapProductToResponse(product);
         return ResponseEntity.ok(productResponse);
+    }
+
+    @GetMapping("/{productId}/exists")
+    public boolean checkProductExists(@PathVariable UUID productId) {
+        return productService.checkProductExists(productId);
     }
 }
