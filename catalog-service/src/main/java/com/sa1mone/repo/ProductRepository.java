@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -16,4 +17,5 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     boolean existsByNameAndIdNot(String name, UUID id);
     List<Product> findByIsActiveTrue();
     boolean existsByName(String name);
+    List<Product> findByIdIn(Set<UUID> batchRequest);
 }

@@ -27,4 +27,11 @@ public class InventoryConsumer {
         int reservedQuantity = (int) message.get("reservedQuantity");
         productService.reserveProductStock(productId, reservedQuantity);
     }
+
+    @RabbitListener(queues = "inventory.queue.restored_stock")
+    public void handleRestoredStockMessage(Map<String, Object> message) {
+        UUID productId = UUID.fromString((String) message.get("productId"));
+        int restoredQuantity = (int) message.get("restoredQuantity");
+        productService.restoreProductStock(productId, restoredQuantity);
+    }
 }

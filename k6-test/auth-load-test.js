@@ -2,15 +2,14 @@ import http from 'k6/http';
 import { sleep, check, group } from 'k6';
 import { Trend } from 'k6/metrics';
 
-// 🔹 Метрика для аналізу часу відгуку API
-let registrationResponseTime = new Trend('registration_response_time');
-let loginResponseTime = new Trend('login_response_time');
+ let registrationResponseTime = new Trend('registration_response_time');
+ let loginResponseTime = new Trend('login_response_time');
 
 export let options = {
     stages: [
-        { duration: '30s', target: 500 },
-        { duration: '60s', target: 2000 },
-        { duration: '30s', target: 0 }
+        { duration: '15s', target: 10 },
+        { duration: '30s', target: 100 },
+        { duration: '15s', target: 0 }
     ]
 };
 

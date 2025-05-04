@@ -27,6 +27,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue restoredStockQueue() {
+        return new Queue("inventory.queue.restored_stock", true);
+    }
+
+    @Bean
     public Binding newStockBinding(Queue newStockQueue, DirectExchange inventoryExchange) {
         return BindingBuilder.bind(newStockQueue).to(inventoryExchange).with("inventory.new_stock");
     }
@@ -34,6 +39,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding reservedStockBinding(Queue reservedStockQueue, DirectExchange inventoryExchange) {
         return BindingBuilder.bind(reservedStockQueue).to(inventoryExchange).with("inventory.reserved_stock");
+    }
+
+    @Bean
+    public Binding restoredStockBinding(Queue restoredStockQueue, DirectExchange inventoryExchange) {
+        return BindingBuilder.bind(restoredStockQueue).to(inventoryExchange).with("inventory.restored_stock");
     }
 
     @Bean

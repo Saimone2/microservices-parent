@@ -9,8 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -158,5 +157,34 @@ public class ProductServiceImpl implements ProductService {
 
         product.setStockQuantity(product.getStockQuantity() - reservedQuantity);
         productRepository.save(product);
+    }
+
+    @Override
+    public void restoreProductStock(UUID productId, int restoredQuantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        product.setStockQuantity(product.getStockQuantity() + restoredQuantity);
+        productRepository.save(product);
+    }
+
+    @Override
+    public Map<UUID, ProductResponse> getProductsBatch(Set<UUID> batchRequest) {
+        List<Product> products = productRepository.findByIdIn(batchRequest);
+
+        Map<UUID, ProductResponse> response = new HashMap<>();
+        for (Product product : products) {
+            ProductResponse productResponse = new ProductResponse();
+            productResponse.setName(product.getName());
+            productResponse.setDescription(product.getDescription());
+            productResponse.setPrice(product.getPrice());
+            productResponse.setQuantity(product.getStockQuantity());
+            response.put(product.getId(), productResponse);
+        }
+
+        for (UUID id : batchRequest) {
+            response.putIfAbsent(id, null);
+        }
+        return response;
     }
 }

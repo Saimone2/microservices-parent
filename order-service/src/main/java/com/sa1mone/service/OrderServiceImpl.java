@@ -14,15 +14,14 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.ServiceUnavailableException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,10 +63,16 @@ public class OrderServiceImpl implements OrderService {
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
 
+        Set<UUID> productIds = orderRequest.getItems().stream()
+                .map(OrderRequest.OrderItemRequest::getProductId)
+                .collect(Collectors.toSet());
+
+        Map<String, ProductResponse> productResponses = fetchProductInfoBatch(productIds);
+
         List<OrderItem> orderItems = orderRequest.getItems().stream()
                 .map(item -> {
-                    boolean isAvailable = checkStock(item.getProductId(), item.getQuantity());
-
+                    boolean isAvailable = checkStock(item.getProductId(), item.getQuantity(), productResponses);
+                    System.out.println(isAvailable);
                     if (!isAvailable) {
                         throw new IllegalArgumentException("Not enough stock for product: " + item.getProductId());
                     }
@@ -77,7 +82,10 @@ public class OrderServiceImpl implements OrderService {
                     orderItem.setProductId(item.getProductId());
                     orderItem.setQuantity(item.getQuantity());
 
-                    ProductResponse productResponse = fetchProductInfoById(item.getProductId());
+                    ProductResponse productResponse = productResponses.get(item.getProductId().toString());
+                    if (productResponse == null) {
+                        throw new IllegalStateException("Product info not found for ID: " + item.getProductId());
+                    }
                     orderItem.setPrice(productResponse.getPrice());
                     return orderItem;
                 })
@@ -93,9 +101,67 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         orderItems.forEach(item -> reserveStock(item.getProductId(), item.getQuantity()));
-
         createDeliveryForOrder(savedOrder);
         return savedOrder;
+    }
+
+    public boolean checkStock(UUID productId, int quantity, Map<String, ProductResponse> productResponses) {
+        ProductResponse product = productResponses.get(productId.toString());
+        if (product == null) {
+            throw new IllegalStateException("Product info not found for ID: " + productId);
+        }
+        return product.getQuantity() >= quantity;
+    }
+
+    private Map<String, ProductResponse> fetchProductInfoBatch(Set<UUID> productIds) {
+        String catalogServiceUrl = "http://catalog-service:8082/management/product/batch-full";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        List<String> productIdsList = productIds.stream()
+                .map(UUID::toString)
+                .collect(Collectors.toList());
+
+        HttpEntity<List<String>> requestEntity = new HttpEntity<>(productIdsList, headers);
+
+        try {
+            HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+            factory.setConnectTimeout(5000);
+            factory.setReadTimeout(10000);
+            RestTemplate restTemplateWithTimeout = new RestTemplate(factory);
+
+            ResponseEntity<Map> response = restTemplateWithTimeout.postForEntity(
+                    catalogServiceUrl, requestEntity, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, ProductResponse> result = new HashMap<>();
+                Map<String, Map> body = response.getBody();
+                if (body != null) {
+                    for (Map.Entry<String, Map> entry : body.entrySet()) {
+                        String id = entry.getKey();
+                        Map data = entry.getValue();
+                        if (data != null) {
+                            ProductResponse productResponse = new ProductResponse();
+                            productResponse.setName((String) data.get("name"));
+                            productResponse.setDescription((String) data.get("description"));
+                            productResponse.setPrice((Double) data.get("price"));
+                            productResponse.setQuantity((Integer) data.get("quantity"));
+                            result.put(id, productResponse);
+                        }
+                    }
+                }
+
+                for (UUID id : productIds) {
+                    result.putIfAbsent(id.toString(), new ProductResponse("Unknown", "Not found", 0.0, 0));
+                }
+                return result;
+            } else {
+                throw new ServiceUnavailableException("Catalog Service returned error: " + response.getStatusCode());
+            }
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Catalog Service is unavailable: " + e.getMessage());
+        }
     }
 
     public void reserveStock(UUID productId, int quantity) {
@@ -108,11 +174,6 @@ public class OrderServiceImpl implements OrderService {
         } catch (RestClientException e) {
             throw new ServiceUnavailableException("Inventory Service is unavailable: " + e.getMessage());
         }
-    }
-
-    public boolean checkStock(UUID productId, int quantity) {
-        ProductResponse product = fetchProductInfoById(productId);
-        return product.getQuantity() >= quantity;
     }
 
     private void createDeliveryForOrder(Order order) {
@@ -152,6 +213,55 @@ public class OrderServiceImpl implements OrderService {
             throw new EntityNotFoundException("This order was not found for user");
         }
         return order.getStatus();
+    }
+
+    @Override
+    public OrderStatus cancelOrder(String email, UUID orderId) {
+        UserResponse userResponse = fetchUserInfoByEmail(email);
+        UUID userId = userResponse.getId();
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("This order was not found for user"));
+
+        if (!order.getUserId().equals(userId)) {
+            throw new EntityNotFoundException("This order was not found for user");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Order is already canceled");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        for (OrderItem item : order.getItems()) {
+            restoreStock(item.getProductId(), item.getQuantity());
+        }
+
+        cancelDelivery(order.getId());
+        return order.getStatus();
+    }
+
+    private void cancelDelivery(UUID orderId) {
+        String url = "http://delivery-service:8086/management/delivery/" + orderId + "/cancel";
+
+        try {
+            restTemplate.exchange(url, HttpMethod.DELETE, null, Void.class);
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Failed to cancel delivery: " + e.getMessage());
+        }
+    }
+
+    public void restoreStock(UUID productId, int quantity) {
+        String inventoryServiceUrl = "http://inventory-service:8085/management/inventory/restore";
+
+        ReserveStockRequest request = new ReserveStockRequest(productId, quantity);
+
+        try {
+            restTemplate.postForEntity(inventoryServiceUrl, request, Void.class);
+        } catch (RestClientException e) {
+            throw new ServiceUnavailableException("Inventory Service is unavailable: " + e.getMessage());
+        }
     }
 
     private OrderResponse mapOrderToResponse(Order order) {

@@ -45,11 +45,11 @@ public class TestDataLoader implements CommandLineRunner {
         List<Warehouse> testWarehouses = warehouseService.getAllWarehouses();
 
         return List.of(
-                new InventoryRequest(testProducts.get(0).getId(), testWarehouses.get(0).getId(), 5),
-                new InventoryRequest(testProducts.get(0).getId(), testWarehouses.get(2).getId(), 9),
-                new InventoryRequest(testProducts.get(1).getId(), testWarehouses.get(1).getId(), 8),
-                new InventoryRequest(testProducts.get(2).getId(), testWarehouses.get(1).getId(), 12),
-                new InventoryRequest(testProducts.get(3).getId(), testWarehouses.get(2).getId(), 6)
+                new InventoryRequest(testProducts.get(0).getId(), testWarehouses.get(0).getId(), 50000000),
+                new InventoryRequest(testProducts.get(0).getId(), testWarehouses.get(2).getId(), 90000000),
+                new InventoryRequest(testProducts.get(1).getId(), testWarehouses.get(1).getId(), 80000000),
+                new InventoryRequest(testProducts.get(2).getId(), testWarehouses.get(1).getId(), 1200000000),
+                new InventoryRequest(testProducts.get(3).getId(), testWarehouses.get(2).getId(), 60000000)
         );
     }
 }

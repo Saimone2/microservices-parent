@@ -5,6 +5,8 @@ import com.sa1mone.request.ProductRequest;
 import com.sa1mone.response.ProductResponse;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public interface ProductService {
@@ -21,4 +23,6 @@ public interface ProductService {
     ProductResponse mapProductToResponse(Product product);
     void updateProductStock(UUID productId, int quantity);
     void reserveProductStock(UUID productId, int reservedQuantity);
+    void restoreProductStock(UUID productId, int restoredQuantity);
+    Map<UUID, ProductResponse> getProductsBatch(Set<UUID> batchRequest);
 }

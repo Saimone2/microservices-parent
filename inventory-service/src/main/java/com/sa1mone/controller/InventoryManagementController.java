@@ -33,4 +33,15 @@ public class InventoryManagementController {
                     .body(Map.of("success", false, "message", "Not enough stock"));
         }
     }
+
+    @PostMapping("/restore")
+    public ResponseEntity<Map<String, Object>> restoreStock(@RequestBody ReserveStockRequest request) {
+        boolean restored = inventoryService.restoreStock(request.getProductId(), request.getQuantity());
+        if (restored) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "Stock restored"));
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "message", "Stock not found or cannot be restored"));
+        }
+    }
 }

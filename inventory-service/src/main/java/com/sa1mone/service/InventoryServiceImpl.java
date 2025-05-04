@@ -63,7 +63,7 @@ public class InventoryServiceImpl implements InventoryService {
     public boolean checkProductExists(UUID productId) {
         try {
             Boolean response = restTemplate.getForObject(
-                    "http://catalog-service:8082/product/management/" + productId + "/exists",
+                    "http://catalog-service:8082/management/product/" + productId + "/exists",
                     Boolean.class
             );
             return response != null && response;
@@ -156,6 +156,41 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         return remainingQuantity == 0;
+    }
+
+    @Override
+    public boolean restoreStock(UUID productId, int quantity) {
+        List<Inventory> inventories = inventoryRepository.findByProductId(productId).orElseThrow(() ->
+                new EntityNotFoundException("Product not found in any warehouse")
+        );
+
+        int remainingQuantity = quantity;
+        int totalRestored = 0;
+
+        for (Inventory inventory : inventories) {
+            if (remainingQuantity <= 0) break;
+
+            int reserved = inventory.getReservedQuantity();
+            int toRestore = Math.min(reserved, remainingQuantity);
+
+            inventory.setReservedQuantity(reserved - toRestore);
+            inventory.setAvailableQuantity(inventory.getAvailableQuantity() + toRestore);
+            inventoryRepository.save(inventory);
+
+            remainingQuantity -= toRestore;
+            totalRestored += toRestore;
+        }
+
+        if (totalRestored > 0) {
+            sendStockRestoredMessage(productId, totalRestored);
+        }
+
+        return remainingQuantity == 0;
+    }
+
+    public void sendStockRestoredMessage(UUID productId, int restoredQuantity) {
+        rabbitTemplate.convertAndSend("inventory.exchange", "inventory.restored_stock",
+                Map.of("productId", productId.toString(), "restoredQuantity", restoredQuantity));
     }
 
     public void sendStockReservedMessage(UUID productId, int reservedQuantity) {

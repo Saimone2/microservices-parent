@@ -12,9 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -50,6 +48,39 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new RuntimeException("An unexpected error occurred during registration: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void deleteAllUsers() {
+        String usersUrl = properties.getAuthServerUrl() + "/admin/realms/" + properties.getRealm() + "/users";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(getAdminAccessToken());
+
+        int first = 0;
+        int batchSize = 100;
+        List<String> allUserIds = new ArrayList<>();
+
+        while (true) {
+            ResponseEntity<List> response = restTemplate.exchange(
+                    usersUrl + "?first=" + first + "&max=" + batchSize, HttpMethod.GET, new HttpEntity<>(headers), List.class);
+
+            List<LinkedHashMap<String, Object>> users = Optional.ofNullable(response.getBody()).orElse(Collections.emptyList());
+            if (users.isEmpty()) break;
+
+            allUserIds.addAll(
+                    users.stream().map(user -> (String) user.get("id")).toList()
+            );
+
+            first += batchSize;
+        }
+
+        allUserIds.parallelStream().forEach(userId -> {
+            try {
+                restTemplate.exchange(usersUrl + "/" + userId, HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+            } catch (Exception e) {
+                System.err.println("Failed to delete user: " + userId + ", Error: " + e.getMessage());
+            }
+        });
     }
 
     private void assignRoleToUser(String userId, String roleName) {
@@ -122,6 +153,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
     public String getAdminAccessToken() {
         String url = buildUrl("realms/" + properties.getRealm() + "/protocol/openid-connect/token");
 

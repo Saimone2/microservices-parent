@@ -18,6 +18,7 @@ public class TestDataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // authService.deleteAllUsers();
         if (authService.isUserTableEmpty()) {
             List<UserRegistrationRequest> testUsers = List.of(
                     new UserRegistrationRequest("admin@gmail.com", "securepass", "Andrew", "Khrushch", "+380967933134", "10 Kyivska st.", "admin"),

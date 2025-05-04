@@ -6,6 +6,7 @@ import java.util.Map;
 
 public interface AuthService {
     void registerUser(Map<String, Object> userDataKeycloak, Map<String, Object> userDataService);
+    void deleteAllUsers();
     Map<String, Object> loginUser(String email, String password);
     String getAdminAccessToken();
     boolean deactivateUser(String email);
