@@ -29,7 +29,7 @@ services:
         condition: service_healthy
     networks:
       - microservices-net
-    entrypoint: [ "k6", "run", "/scripts/auth-load-test.js" ]
+    #entrypoint: [ "k6", "run", "/scripts/auth-load-test.js" ]
 
   # Config Server
   config-server:
