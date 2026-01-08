@@ -6,6 +6,7 @@ import com.sa1mone.response.UserResponse;
 import com.sa1mone.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -20,6 +21,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserManagementController.class)
+@ImportAutoConfiguration(exclude = {
+        org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration.class
+})
 class UserManagementControllerTest {
 
     @Autowired
