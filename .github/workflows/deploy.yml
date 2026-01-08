@@ -1,0 +1,29 @@
+name: CI/CD for Microservices
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build all modules with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Build Docker images
+        run: |
+          docker compose -f docker-compose.yml build --parallel
